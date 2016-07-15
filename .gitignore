@@ -1,0 +1,8 @@
+.vscode/
+martin_data/
+model_plots/
+obs_data/
+test_directory/
+*.sh
+*.json
+.localized
