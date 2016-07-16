@@ -7,3 +7,5 @@ test_directory/
 *.sh
 *.json
 .localized
+vsEnvironSetup.py
+vsEnvironSetup.pyc
