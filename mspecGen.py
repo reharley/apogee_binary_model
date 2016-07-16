@@ -13,9 +13,11 @@ import vsEnvironSetup
 vsEnvironSetup.setVariables()
 
 import apogee.tools.read as apread
+import apogee.spec.plot as splot
 from apogee.modelspec import ferre
 import numpy as np
 import scipy.constants as const
+import matplotlib.pyplot as plt
 
 # Current constants
 teff1 = 5000.
@@ -24,12 +26,10 @@ logg = 4.7
 metals = am = nm = cm = 0.
 
 # Star stuff
-locationID = 4611
-apogeeID = '2M05350392-0529033'
 visit = 1
 
 # Contains the dir that holds martins data (deltaV's)
-martin_data = 'martin_data/'
+martin_data = '/Volumes/CoveyData/APOGEE_Spectra/Martin/Data/Highly_Likely/rv_tables/'
 
 # Create parameter arrays
 params = [	[teff1, teff2],
@@ -57,23 +57,28 @@ def calcDeltaRV(locationID, apogeeID, visit):
 	'''
 	# Get the Julian Dates, velocity of components A and B (km/s), and residual velocities (km/s)
 	# TODO: just get the line we want... no need to load the whole file. line = visit
-	jDates, velA, velB, residual = np.loadtxt(martin_data + apogeeID + '_rvs.tbl', skiprows=1, unpack=True)
+	jDates, velA, velB, residual = np.loadtxt(martin_data + str(locationID) + '_' + apogeeID + '_rvs.tbl', skiprows=1, unpack=True)
 
 	# Get the master HDU of the binary
 	badheader, header = apread.apStar(locationID, apogeeID, ext=0, header=True)
 
-	# Find the correct row from the rvs table
+	
 	row = -1
-	try:
-		for i in range(header['NVISITS']):
-			if (int(header['JD' + str(visit)] * 10) == int(jDates[i] * 10)):
-				row = i
-	except IndexError:
-		print('WARNING: rvs table for ' + apogeeID + ' may not have the same visit count.')
-		pass
-
+	# Check if there is only one visit
+	if (header['NVISITS'] == 1):
+		return [ velA - velB, velB - velA ]
+	# Find the correct row from the rvs table
+	else:
+		try:
+			for i in range(header['NVISITS']):
+				if (int(header['JD' + str(visit)] * 10) == int(jDates[i] * 10)):
+					row = i
+		except IndexError:
+			print('WARNING: rvs table for ' + str(locationID) + ', ' + apogeeID + ' may not have the same visit count.')
+			pass
+	
 	if(row == -1):
-		raise Exception('ERROR: visit not found. Check rvs tables and master HDU of ' + apogeeID)
+		raise Exception('ERROR: visit not found. Check rvs tables and master HDU of ' + str(locationID) + '_' + apogeeID)
 
 	return [ velA[row] - velB[row], velB[row] - velA[row] ]
 
@@ -114,7 +119,8 @@ def binaryModelGen(locationID, apogeeID, params, deltaV, visit):
 	norm = np.append(	np.linspace(2, 1, num=(len(cspec)/2), endpoint=False),
 						np.linspace(1, 2, num=(len(cspec)/2) + 1))
 	# Get Normalized cross correlation function between continuum-normalized spectra and the model spectra
-	velNorm = np.convolve(cspec, totalFlux[0], mode='same') / norm
+	vel = np.correlate(cspec, totalFlux[0], mode='same')
+	velNorm = vel/norm
 	# Get the pixel shift we need to correct for
 	pixelShift = len(cspec)/2 - velNorm.argmax(axis=0)
 
@@ -135,5 +141,7 @@ def binaryModelGen(locationID, apogeeID, params, deltaV, visit):
 
 	return totalFlux
 
-deltaV = calcDeltaRV(locationID, apogeeID, visit)
-binaryModelGen(locationID, apogeeID, params, deltaV, visit)
+locationIDs, apogeeIDs = np.loadtxt('binaries.dat', unpack=True, delimiter=',', dtype=str)
+for i in range(len(locationIDs)):
+	deltaV = calcDeltaRV(int(locationIDs[i]), apogeeIDs[i], visit)
+	binaryModelGen(int(locationIDs[i]), apogeeIDs[i], params, deltaV, visit)
