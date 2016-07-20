@@ -8,10 +8,6 @@ two values for each star in the binary. This may change to accept more
 parameters for optimization. (To probably 6 of each).
 '''
 
-# This is for VS code only.
-import vsEnvironSetup
-vsEnvironSetup.setVariables()
-
 import apogee.tools.read as apread
 import apogee.spec.plot as splot
 from apogee.modelspec import ferre
@@ -19,26 +15,8 @@ import numpy as np
 import scipy.constants as const
 import matplotlib.pyplot as plt
 
-# Current constants
-teff1 = 5000.
-teff2 = 5250.
-logg = 4.7
-metals = am = nm = cm = 0.
-
-# Star stuff
-visit = 1
-
 # Contains the dir that holds martins data (deltaV's)
 martin_data = '/Volumes/CoveyData/APOGEE_Spectra/Martin/Data/Highly_Likely/rv_tables/'
-
-# Create parameter arrays
-params = [	[teff1, teff2],
-			[logg, logg],
-			[metals, metals],
-			[am, am],
-			[nm, nm],
-			[cm, cm] ]
-
 
 def calcDeltaRV(locationID, apogeeID, visit):
 	'''
@@ -82,7 +60,7 @@ def calcDeltaRV(locationID, apogeeID, visit):
 
 	return [ velA[row] - velB[row], velB[row] - velA[row] ]
 
-def binaryModelGen(locationID, apogeeID, params, deltaV, visit):
+def binaryModelGen(locationID, apogeeID, params, visit):
 	'''
 	Interpolates the spectra of the individual stars in the binary using some initial parameters and their velocity
 	difference.
@@ -91,9 +69,9 @@ def binaryModelGen(locationID, apogeeID, params, deltaV, visit):
 	:param apogeeID: The apogee ID of the binary.
 	:param params: The paramters to test against the observed data.
 		format: [ [Teff1, ...], [logg1, ...], [metals1, ...], [am1, ...], [nm1, ...], [cm1, ...]]
-	:param deltaV: The relative velocity differences between the stars.
 	:param visit: The visit to test against.
-	:returns: The binary model flux. Currently returns 2 for each set of paramaters (see calcDeltaRV for details).
+	:returns: The binary model flux and the maximum value from the cross correlation function between the modeled
+	totalFlux and the continuum-normalized spectrum. (totalFlux, max)
 	'''
 	# Generate models (flux1, flux2)
 	mspec = ferre.interpolate(params[0], params[1], params[2],
@@ -102,6 +80,9 @@ def binaryModelGen(locationID, apogeeID, params, deltaV, visit):
 	for i in range(mspec.shape[0]):
 		mspec[i][np.isnan(mspec[i])] = 0.
 	
+	# Calculate deltaV
+	deltaV = calcDeltaRV(locationID, apogeeID, visit)
+	
 	# Generate the wavelength grid
 	restLambda = splot.apStarWavegrid()
 	# Calculates wavelength grid for the second star with a doppler shift
@@ -109,20 +90,37 @@ def binaryModelGen(locationID, apogeeID, params, deltaV, visit):
 
 	# The fluxes of both stars
 	shiftedFlux = [np.interp(restLambda, sLambda, mspec[0]) for sLambda in shiftLambda]
-	# The combined flux of the stars
+	# The combined flux of the stars in the modeled binary
 	totalFlux = [(sFlux + mspec[1]) / 2. for sFlux in shiftedFlux]
 
 	# Get the continuum-normalized spectrum to subtract from the models
 	cspec = apread.aspcapStar(locationID, apogeeID, ext=1, header=False)
 
 	# Create array to normalize the cross correlation function output [2, 1) + [1, 2]
-	norm = np.append(	np.linspace(2, 1, num=(len(cspec)/2), endpoint=False),
-						np.linspace(1, 2, num=(len(cspec)/2) + 1))
+	norm = np.append(np.linspace(2, 1, num=(len(cspec)/2), endpoint=False),
+					np.linspace(1, 2, num=(len(cspec)/2) + 1))
 	# Get Normalized cross correlation function between continuum-normalized spectra and the model spectra
-	vel = np.correlate(cspec, totalFlux[0], mode='same')
-	velNorm = vel/norm
+	pixelCorrelation = [np.correlate(tFlux, cspec, mode='same') / norm for tFlux in totalFlux]
+	
 	# Get the pixel shift we need to correct for
-	pixelShift = len(cspec)/2 - velNorm.argmax(axis=0)
+	pixelShift = [len(cspec)/2 - pixCorr.argmax(axis=0) for pixCorr in pixelCorrelation]
+
+	# TODO: Must... be... cleaner... way...
+	# Use velocity that is closest to the correct shift
+	if(np.abs(pixelShift[0]) < np.abs(pixelShift[1])):
+		pixelShift = pixelShift[0]
+		totalFlux = totalFlux[0]
+		shiftLambda = shiftLambda[0]
+		shiftedFlux = shiftedFlux[0]
+		deltaV = deltaV[0]
+		pixelCorrelation = pixelCorrelation[0]
+	else:
+		pixelShift = pixelShift[1]
+		totalFlux = totalFlux[1]
+		shiftLambda = shiftLambda[1]
+		shiftedFlux = shiftedFlux[1]
+		deltaV = deltaV[1]
+		pixelCorrelation = pixelCorrelation[1]
 
 	# If there is a pixel shift, lets get the correction
 	if(pixelShift != 0):
@@ -133,15 +131,19 @@ def binaryModelGen(locationID, apogeeID, params, deltaV, visit):
 		helioV = header['VHELIO' + str(visit)]
 		alpha = header['CDELT1']
 		
-		# Plug in shift into martins equation
-		shiftCorrection = (10.**(alpha * pixelShift) - 1.) + helioV
-		print('Shift correction', shiftCorrection)
-	else:
-		print('Pixel shift is 0 so there is no need to correct')
+		# Plug in shift into martins equation and correct the deltaV
+		velocityCorrection = (10.**(alpha * pixelShift) - 1.) + helioV
+		deltaV+= velocityCorrection
 
-	return totalFlux
+		# Calculates wavelength grid for the second star with a doppler shift
+		shiftLambda = restLambda * (1. + deltaV / (const.c / 1000.))
 
-locationIDs, apogeeIDs = np.loadtxt('binaries.dat', unpack=True, delimiter=',', dtype=str)
-for i in range(len(locationIDs)):
-	deltaV = calcDeltaRV(int(locationIDs[i]), apogeeIDs[i], visit)
-	binaryModelGen(int(locationIDs[i]), apogeeIDs[i], params, deltaV, visit)
+		# The fluxes of both stars
+		shiftedFlux = np.interp(restLambda, shiftLambda, mspec[0])
+		# The combined flux of the stars in the modeled binary
+		totalFlux = (shiftedFlux + mspec[1]) / 2.
+
+		print('Shift correction', velocityCorrection)
+		print('Delta V', deltaV)
+	
+	return totalFlux, np.max(pixelCorrelation, axis=0)
