@@ -6,6 +6,7 @@ obs_data/
 test_directory/
 *.sh
 *.json
+*.png
 .localized
 vsEnvironSetup.py
 vsEnvironSetup.pyc
