@@ -8,12 +8,12 @@ two values for each star in the binary. This may change to accept more
 parameters for optimization. (To probably 6 of each).
 '''
 
+import binPlot
+import numpy as np
+import scipy.constants as const
 import apogee.tools.read as apread
 import apogee.spec.plot as splot
 from apogee.modelspec import ferre
-import numpy as np
-import scipy.constants as const
-import matplotlib.pyplot as plt
 
 # Contains the dir that holds martins data (deltaV's)
 martin_data = '/Volumes/CoveyData/APOGEE_Spectra/Martin/Data/Highly_Likely/rv_tables/'
@@ -60,7 +60,7 @@ def calcDeltaRV(locationID, apogeeID, visit):
 
 	return [ velA[row] - velB[row], velB[row] - velA[row] ]
 
-def binaryModelGen(locationID, apogeeID, params, visit):
+def binaryModelGen(locationID, apogeeID, params, visit, plot=True):
 	'''
 	Interpolates the spectra of the individual stars in the binary using some initial parameters and their velocity
 	difference.
@@ -92,18 +92,20 @@ def binaryModelGen(locationID, apogeeID, params, visit):
 	shiftedFlux = [np.interp(restLambda, sLambda, mspec[0]) for sLambda in shiftLambda]
 	# The combined flux of the stars in the modeled binary
 	totalFlux = [(sFlux + mspec[1]) / 2. for sFlux in shiftedFlux]
-
+	
 	# Get the continuum-normalized spectrum to subtract from the models
 	cspec = apread.aspcapStar(locationID, apogeeID, ext=1, header=False)
+	cspecerr = apread.aspcapStar(locationID, apogeeID, ext=2, header=False)
 
 	# Create array to normalize the cross correlation function output [2, 1) + [1, 2]
 	norm = np.append(np.linspace(2, 1, num=(len(cspec)/2), endpoint=False),
 					np.linspace(1, 2, num=(len(cspec)/2) + 1))
 	# Get Normalized cross correlation function between continuum-normalized spectra and the model spectra
-	pixelCorrelation = [np.correlate(tFlux, cspec, mode='same') / norm for tFlux in totalFlux]
+	pixelCorrelation = [np.correlate(tFlux, cspec, mode='same') for tFlux in totalFlux]
+	pixelNorm = [pixelCorr / norm for pixelCorr in pixelCorrelation]
 	
 	# Get the pixel shift we need to correct for
-	pixelShift = [len(cspec)/2 - pixCorr.argmax(axis=0) for pixCorr in pixelCorrelation]
+	pixelShift = [len(cspec)/2 - pNorm.argmax(axis=0) for pNorm in pixelNorm]
 
 	# TODO: Must... be... cleaner... way...
 	# Use velocity that is closest to the correct shift
@@ -114,6 +116,7 @@ def binaryModelGen(locationID, apogeeID, params, visit):
 		shiftedFlux = shiftedFlux[0]
 		deltaV = deltaV[0]
 		pixelCorrelation = pixelCorrelation[0]
+		pixelNorm = pixelNorm[0]
 	else:
 		pixelShift = pixelShift[1]
 		totalFlux = totalFlux[1]
@@ -121,7 +124,9 @@ def binaryModelGen(locationID, apogeeID, params, visit):
 		shiftedFlux = shiftedFlux[1]
 		deltaV = deltaV[1]
 		pixelCorrelation = pixelCorrelation[1]
+		pixelNorm = pixelNorm[1]
 
+	
 	# If there is a pixel shift, lets get the correction
 	if(pixelShift != 0):
 		# Get the master HDU of the binary
@@ -131,6 +136,7 @@ def binaryModelGen(locationID, apogeeID, params, visit):
 		helioV = header['VHELIO' + str(visit)]
 		alpha = header['CDELT1']
 		
+		print('Delta V initial', deltaV)
 		# Plug in shift into martins equation and correct the deltaV
 		velocityCorrection = (10.**(alpha * pixelShift) - 1.) + helioV
 		deltaV+= velocityCorrection
@@ -145,5 +151,16 @@ def binaryModelGen(locationID, apogeeID, params, visit):
 
 		print('Shift correction', velocityCorrection)
 		print('Delta V', deltaV)
-	
-	return totalFlux, np.max(pixelCorrelation, axis=0)
+
+	# Make the plots
+	if (plot == True):
+		binPlot.plotCCF(locationID, apogeeID, visit, restLambda, pixelNorm, params, 'norm');
+		binPlot.plotCCF(locationID, apogeeID, visit, restLambda, pixelCorrelation, params, '');
+		binPlot.plotDeltaVCheck(locationID, apogeeID, visit,
+						[[ restLambda, mspec[0], 'blue', 'rest model specA' ],
+						 [ restLambda, mspec[1], 'green', 'rest model specB' ],
+						 [ restLambda, cspec, 'orange', 'cont-norm spec' ],
+						 [ restLambda, shiftedFlux, 'purple', 'shift model specA' ]],
+						params[0], 'Delta V Shift');
+
+	return totalFlux, np.max(pixelNorm, axis=0), np.sum( ((cspec - totalFlux)/cspecerr)**2. )
