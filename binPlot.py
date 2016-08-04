@@ -85,12 +85,11 @@ def plotCOMPCCF(locationID, apogeeID, visit, shift, plots, params, normed, folde
 	for plot in plots:
 		ax.plot(plot[0], color=plot[1], label=plot[2])
 
-	handles, labels = ax.get_legend_handles_labels()
-	ax.legend(handles, labels, loc='best')
-
 	ax.set_xlabel('CCF Indecies')
 	ax.set_ylabel('Agreement')
-	ax.text(0, 0.95, str(locationID) + ', ' + apogeeID + '    Visit: ' + str(visit) + ' shift (px): ' + str(shift), ha='left', transform=ax.transAxes)
+	ax.text(0, 0.95, str(locationID) + ', ' + apogeeID + '    Visit: ' + str(visit) + ' shift (km/s): ' + str(shift), ha='left', transform=ax.transAxes)
+	handles, labels = ax.get_legend_handles_labels()
+	ax.legend(handles, labels, loc='center right')
 	plt.savefig(path + '_' + normed + str(visit) + '.png', format='png')
 	plt.clf()
 	plt.close('all')

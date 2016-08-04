@@ -39,10 +39,9 @@ for i in range(len(locationIDs)):
 	print(str(i + 1) + '/' + str(targetCount) + ' targets completed')
 	for visit in range(1, nvisits):
 		data = apread.apStar(locationID, apogeeID, ext=9, header=False)
-		if (nvisits == 1):
-			spec = apread.apStar(locationID, apogeeID, ext=1, header=False)
-			ccf = data['CCF'][0]
-		else:
+		spec = apread.apStar(locationID, apogeeID, ext=1, header=False)
+		ccf = data['CCF'][0]
+		if (nvisits != 1):
 			spec = apread.apStar(locationID, apogeeID, ext=1, header=False)[1+visit]
 			ccf = data['CCF'][0][1+visit]
 		
@@ -63,12 +62,10 @@ for i in range(len(locationIDs)):
 		mspecs = ferre.interpolate(params[0], params[1], params[2],
 									params[3], params[4], params[5])
 		for mspec in mspecs:
-			mspec = mspec[np.where(np.isnan(mspec) == False)]
-			# mspec[np.where(np.isnan(mspec))] = 0.0
+			mspec[np.where(np.isnan(mspec))] = 0.0
 		
 		# prep obs spec
-		spec = spec[np.where(np.isnan(spec) == False)]
-		# spec[np.where(np.isnan(spec))] = 0.0
+		spec[np.where(np.isnan(spec))] = 0.0
 		spec = spec / max(spec)
 
 		# Generate the wavelength grid
@@ -104,7 +101,7 @@ for i in range(len(locationIDs)):
 				# Plug in shift into martins equation and correct the deltaV
 				velocityShift = (10.**(alpha * pixelShift) - 1.) + helioV
 
-		binPlot.plotCOMPCCF(locationID, apogeeID, visit, pixelShift, 
+		binPlot.plotCOMPCCF(locationID, apogeeID, visit, velocityShift, 
 							[	[ccfs[0], 'green', 'approx Teff'],
 								[ccfs[1], 'blue', 'Hot Teff'],
 								[ccfs[2], 'orange', 'Cool Teff']],
