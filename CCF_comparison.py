@@ -3,6 +3,7 @@ import vsEnvironSetup
 vsEnvironSetup.setVariables()
 
 import binPlot
+from gif_gen import gifGen
 import numpy as np
 import scipy
 import matplotlib.pyplot as plt
@@ -114,4 +115,5 @@ for i in range(len(locationIDs)):
 						[ restLambda, cspec, 'orange', 'cont-norm spec' ]],
 					params, 'Delta V Shift', folder='comparison_deltav');'''
 
-import gif_gen
+gifGen('comparison_CCF/')
+gifGen('comparison_CCF_OFF/')

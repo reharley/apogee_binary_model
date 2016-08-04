@@ -33,6 +33,3 @@ def gifGen(folder):
 			i+= 1
 			print(str(i) + '/' + str(len(subdirs)))
 		os.chdir('../')
-
-gifGen('comparison_CCF/')
-gifGen('comparison_CCF_OFF/')
