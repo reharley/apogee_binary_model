@@ -93,9 +93,16 @@ def binaryModelGen(locationID, apogeeID, params, visit, plot=True):
 	# The combined flux of the stars in the modeled binary
 	totalFlux = [(sFlux + mspec[1]) / 2. for sFlux in shiftedFlux]
 	
-	# Get the continuum-normalized spectrum to subtract from the models
-	cspec = apread.aspcapStar(locationID, apogeeID, ext=1, header=False)
-	cspecerr = apread.aspcapStar(locationID, apogeeID, ext=2, header=False)
+	# Get the continuum-normalized spectrum to subtract from the modelsspec = apread.apStar(locationID, apogeeID, ext=1, header=False)
+	spec = apread.apStar(locationID, apogeeID, ext=1, header=False)
+	specerr = apread.apStar(locationID, apogeeID, ext=2, header=False)
+	if (nvisits != 1):
+		spec = apread.apStar(locationID, apogeeID, ext=1, header=False)[1+visit]
+		specerr = apread.apStar(locationID, apogeeID, ext=2, header=False)[1+visit]
+		ccf = data['CCF'][0][1+visit]
+	aspec= np.reshape(spec,(1,len(spec)))
+	aspecerr= np.reshape(specerr,(1,len(specerr)))
+	cspec = continuum.fit(aspec,aspecerr,type='aspcap')[0]
 
 	# Create array to normalize the cross correlation function output [2, 1) + [1, 2]
 	norm = np.append(np.linspace(2, 1, num=(len(cspec)/2), endpoint=False),
