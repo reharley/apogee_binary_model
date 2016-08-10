@@ -15,24 +15,33 @@ import apogee.tools.read as apread
 import apogee.spec.plot as splot
 from apogee.modelspec import ferre
 
-# Contains the dir that holds martins data (deltaV's)
-martin_data = '/Volumes/CoveyData/APOGEE_Spectra/Martin/Data/Highly_Likely/rv_tables/'
-
-def calcDeltaRV(locationID, apogeeID, visit):
+def getMassRatio(apogeeID):
 	'''
-	Calculates the delta V for the binaries based on the visit we are testing against.
+	Returns the mass ratio between the two stars in the binary system.
+	Not all targets will have a mass ratio. If no ratio is recorded then -1 is returned
 
-	Currently calculates velocity differences of (primary - secondary) and (secondary - primary) to account for the
-	possibility of the veocities being associated to the wrong stars. If we determine this is unnecessary in the
-	future we'll remove this.
+	:param apogeeID: The 2M ID
+	:return: The mass ratio between the two stars. returns -1 if ratio was not found
+	'''
+	apogeeIDs, q = np.loadtxt('lists/gamma_q.dat', delimiter=',', skiprows=1, usecols=[0, 3], dtype=str, unpack=True)
+	for i in range(len(apogeeIDs)):
+		if (apogeeIDs[i] == apogeeID):
+			return float(q[i])
+	
+	return -1.0
 
-	.. todo:: just get the line we want... no need to load the whole file. line = visit
+def getRVs(locationID, apogeeID, visit):
+	'''
+	Returns the velocities of the binar components.
 
 	:param locationID: The location ID of the binary.
 	:param apogeeID: The apogee ID of the binary.
 	:param visit: The visit we are using to test against.
-	:return: The deltaV of the binary. [velA - velB, velB - velA]
+	:return: The velocities of the individual binary components in the system.
 	'''
+	# Contains the dir that holds martins data (deltaV's)
+	martin_data = '/Volumes/CoveyData/APOGEE_Spectra/Martin/Data/Highly_Likely/rv_tables/'
+	
 	# Get the Julian Dates, velocity of components A and B (km/s), and residual velocities (km/s)
 	# TODO: just get the line we want... no need to load the whole file. line = visit
 	jDates, velA, velB, residual = np.loadtxt(martin_data + str(locationID) + '_' + apogeeID + '_rvs.tbl', skiprows=1, unpack=True)
@@ -58,7 +67,31 @@ def calcDeltaRV(locationID, apogeeID, visit):
 	if(row == -1):
 		raise Exception('ERROR: visit not found. Check rvs tables and master HDU of ' + str(locationID) + '_' + apogeeID)
 
-	return [ velA[row] - velB[row], velB[row] - velA[row] ]
+	return [ velA[row], velB[row] ]
+
+def shiftFlux(spec, vel):
+	'''
+	Shifts flux provided.
+
+	May want to allow user to pass restLambda in so we don't generate it again...
+	:param spec: The spectrum to shift
+	:param vel: The velocity to shift by
+	:return: The shifted spectrum
+	'''
+	# Generate the wavelength grid
+	restLambda = splot.apStarWavegrid()
+
+	if (len(spec.shape) > 1):
+		# Calculates wavelength grid for the second star with a doppler shift
+		shiftLambda = [restLambda * (1. + v / (const.c / 1000.)) for v in vel]
+		# The fluxes of both stars
+		shiftedFlux = [np.interp(restLambda, shiftLambda[i], spec[i]) for i in range(len(shiftLambda))]
+	else:
+		# Calculates wavelength grid for the second star with a doppler shift
+		shiftLambda = restLambda * (1. + vel / (const.c / 1000.))
+		# The fluxes of both stars
+		shiftedFlux = np.interp(restLambda, shiftLambda, spec)
+	return shiftedFlux
 
 def binaryModelGen(locationID, apogeeID, params, visit, plot=True):
 	'''
@@ -73,101 +106,36 @@ def binaryModelGen(locationID, apogeeID, params, visit, plot=True):
 	:returns: The binary model flux and the maximum value from the cross correlation function between the modeled
 	totalFlux and the continuum-normalized spectrum. (totalFlux, max)
 	'''
+	# Get flux ratios (using mass ratios)
+	ratio = getMassRatio(apogeeID)
+	secRatio = 1.0
+	if (ratio != -1.0):
+		secRatio = ratio
+	
 	# Generate models (flux1, flux2)
 	mspec = ferre.interpolate(params[0], params[1], params[2],
 							  params[3], params[4], params[5])
-	# Fix to let np.interp work.
-	for i in range(mspec.shape[0]):
-		mspec[i][np.isnan(mspec[i])] = 0.
-	
+	mspec[np.isnan(mspec)] = 0.
 	# Calculate deltaV
-	deltaV = calcDeltaRV(locationID, apogeeID, visit)
+	RVs = getRVs(locationID, apogeeID, visit)
 	
 	# Generate the wavelength grid
 	restLambda = splot.apStarWavegrid()
 	# Calculates wavelength grid for the second star with a doppler shift
-	shiftLambda = [restLambda * (1. + v / (const.c / 1000.)) for v in deltaV]
-
+	shiftLambda = [restLambda * (1. + rv / (const.c / 1000.)) for rv in RVs]
+	
 	# The fluxes of both stars
-	shiftedFlux = [np.interp(restLambda, sLambda, mspec[0]) for sLambda in shiftLambda]
+	shiftedFlux = np.array([np.interp(restLambda, shiftLambda[i], mspec) for i in range(len(shiftLambda))])
+
 	# The combined flux of the stars in the modeled binary
-	totalFlux = [(sFlux + mspec[1]) / 2. for sFlux in shiftedFlux]
-	
-	# Get the continuum-normalized spectrum to subtract from the modelsspec = apread.apStar(locationID, apogeeID, ext=1, header=False)
-	spec = apread.apStar(locationID, apogeeID, ext=1, header=False)
-	specerr = apread.apStar(locationID, apogeeID, ext=2, header=False)
-	if (nvisits != 1):
-		spec = apread.apStar(locationID, apogeeID, ext=1, header=False)[1+visit]
-		specerr = apread.apStar(locationID, apogeeID, ext=2, header=False)[1+visit]
-		ccf = data['CCF'][0][1+visit]
-	aspec= np.reshape(spec,(1,len(spec)))
-	aspecerr= np.reshape(specerr,(1,len(specerr)))
-	cspec = continuum.fit(aspec,aspecerr,type='aspcap')[0]
-
-	# Create array to normalize the cross correlation function output [2, 1) + [1, 2]
-	norm = np.append(np.linspace(2, 1, num=(len(cspec)/2), endpoint=False),
-					np.linspace(1, 2, num=(len(cspec)/2) + 1))
-	# Get Normalized cross correlation function between continuum-normalized spectra and the model spectra
-	pixelCorrelation = [np.correlate(tFlux, cspec, mode='same') for tFlux in totalFlux]
-	pixelNorm = [pixelCorr / norm for pixelCorr in pixelCorrelation]
-	
-	# Get the pixel shift we need to correct for
-	pixelShift = [len(cspec)/2 - pNorm.argmax(axis=0) for pNorm in pixelNorm]
-
-	# TODO: Must... be... cleaner... way...
-	# Use velocity that is closest to the correct shift
-	if(np.abs(pixelShift[0]) < np.abs(pixelShift[1])):
-		pixelShift = pixelShift[0]
-		totalFlux = totalFlux[0]
-		shiftLambda = shiftLambda[0]
-		shiftedFlux = shiftedFlux[0]
-		deltaV = deltaV[0]
-		pixelCorrelation = pixelCorrelation[0]
-		pixelNorm = pixelNorm[0]
-	else:
-		pixelShift = pixelShift[1]
-		totalFlux = totalFlux[1]
-		shiftLambda = shiftLambda[1]
-		shiftedFlux = shiftedFlux[1]
-		deltaV = deltaV[1]
-		pixelCorrelation = pixelCorrelation[1]
-		pixelNorm = pixelNorm[1]
-
-	
-	# If there is a pixel shift, lets get the correction
-	if(pixelShift != 0):
-		# Get the master HDU of the binary
-		badheader, header = apread.apStar(locationID, apogeeID, ext=0, header=True)
-
-		# Heliocentric velocity (km/s) of visit 1
-		helioV = header['VHELIO' + str(visit)]
-		alpha = header['CDELT1']
-		
-		print('Delta V initial', deltaV)
-		# Plug in shift into martins equation and correct the deltaV
-		velocityCorrection = (10.**(alpha * pixelShift) - 1.) + helioV
-		deltaV+= velocityCorrection
-
-		# Calculates wavelength grid for the second star with a doppler shift
-		shiftLambda = restLambda * (1. + deltaV / (const.c / 1000.))
-
-		# The fluxes of both stars
-		shiftedFlux = np.interp(restLambda, shiftLambda, mspec[0])
-		# The combined flux of the stars in the modeled binary
-		totalFlux = (shiftedFlux + mspec[1]) / 2.
-
-		print('Shift correction', velocityCorrection)
-		print('Delta V', deltaV)
+	totalFlux = (shiftedFlux[0] + (shiftedFlux[1] * secRatio)) / 2.0
 
 	# Make the plots
 	if (plot == True):
-		binPlot.plotCCF(locationID, apogeeID, visit, restLambda, pixelNorm, params, 'norm');
-		binPlot.plotCCF(locationID, apogeeID, visit, restLambda, pixelCorrelation, params, '');
 		binPlot.plotDeltaVCheck(locationID, apogeeID, visit,
-						[[ restLambda, mspec[0], 'blue', 'rest model specA' ],
-						 [ restLambda, mspec[1], 'green', 'rest model specB' ],
-						 [ restLambda, cspec, 'orange', 'cont-norm spec' ],
-						 [ restLambda, shiftedFlux, 'purple', 'shift model specA' ]],
-						params[0], 'Delta V Shift');
+						[[ restLambda, mspec, 'blue', 'rest model specA' ],
+						 [ restLambda, shiftedFlux[0], 'orange', 'shift model specA' ],
+						 [ restLambda, shiftedFlux[1], 'purple', 'shift model specB' ]],
+						[params[0],params[0]], 'model_gen');
 
-	return totalFlux, np.max(pixelNorm, axis=0), np.sum( ((cspec - totalFlux)/cspecerr)**2. )
+	return totalFlux

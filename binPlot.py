@@ -50,7 +50,7 @@ def plotDeltaVCheck(locationID, apogeeID, visit, plots, teff, title, folder='del
 	ax.set_xlim(16650, 16800)
 	plt.title(title, loc='left')
 	ax.text(0, 0.95, str(locationID) + ', ' + apogeeID + '    Visit: ' + str(visit), ha='left', transform=ax.transAxes)
-	plt.savefig(path + str(int(teff[0])) + '_' + str(int(teff[1])) + '_' + str(visit) + '.png', format='png')
+	plt.savefig(path + str(int(teff[0])) + '_' + str(int(teff[1])) + '_' + str(visit) + '.png', format='png', dpi=300)
 	plt.clf()
 	plt.close('all')
 

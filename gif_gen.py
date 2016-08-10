@@ -7,7 +7,7 @@ def cleanSubdirs(subdirs):
 		return subdirs[1:]
 	return subdirs
 
-def gifGen(folder):
+def gifGen(folder, duration=0.3):
 	os.chdir('/Users/harleyr/Documents/plots/' + folder)
 	subdirs1 = cleanSubdirs(os.listdir('.'))
 	
@@ -27,7 +27,7 @@ def gifGen(folder):
 				im.thumbnail(size, Image.ANTIALIAS)
 
 			filename = subdir + '.gif'
-			writeGif(filename, images, duration=0.3)
+			writeGif(filename, images, duration=duration)
 			os.chdir('../')
 			
 			i+= 1
