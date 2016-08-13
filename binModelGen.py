@@ -8,7 +8,7 @@ two values for each star in the binary. This may change to accept more
 parameters for optimization. (To probably 6 of each).
 '''
 
-import binPlot
+import BinPlot
 import numpy as np
 import scipy.constants as const
 import apogee.tools.read as apread
@@ -106,16 +106,12 @@ def binaryModelGen(locationID, apogeeID, params, visit, plot=True):
 	:returns: The binary model flux and the maximum value from the cross correlation function between the modeled
 	totalFlux and the continuum-normalized spectrum. (totalFlux, max)
 	'''
-	# Get flux ratios (using mass ratios)
-	ratio = getMassRatio(apogeeID)
-	secRatio = 1.0
-	if (ratio != -1.0):
-		secRatio = ratio
-	
 	# Generate models (flux1, flux2)
-	mspec = ferre.interpolate(params[0], params[1], params[2],
+	mspecs = ferre.interpolate(params[0], params[1], params[2],
 							  params[3], params[4], params[5])
-	mspec[np.isnan(mspec)] = 0.
+	for mspec in mspecs:
+		mspec[np.isnan(mspec)] = 0.
+	
 	# Calculate deltaV
 	RVs = getRVs(locationID, apogeeID, visit)
 	
@@ -125,17 +121,18 @@ def binaryModelGen(locationID, apogeeID, params, visit, plot=True):
 	shiftLambda = [restLambda * (1. + rv / (const.c / 1000.)) for rv in RVs]
 	
 	# The fluxes of both stars
-	shiftedFlux = np.array([np.interp(restLambda, shiftLambda[i], mspec) for i in range(len(shiftLambda))])
+	shiftedFlux = np.array([np.interp(restLambda, shiftLambda[i], mspecs[i]) for i in range(len(shiftLambda))])
 
-	# The combined flux of the stars in the modeled binary
-	totalFlux = (shiftedFlux[0] + (shiftedFlux[1] * secRatio)) / 2.0
+	# The combined flux of the stars in the modeled binary (params[7][1] defined as flux ratio)
+	totalFlux = (shiftedFlux[0] + (shiftedFlux[1] * params[6][1])) / 2.0
 
 	# Make the plots
 	if (plot == True):
-		binPlot.plotDeltaVCheck(locationID, apogeeID, visit,
-						[[ restLambda, mspec, 'blue', 'rest model specA' ],
+		BinPlot.plotDeltaVCheck(locationID, apogeeID, visit,
+						[[ restLambda, mspecs[0], 'blue', 'rest model specA' ],
+						 [ restLambda, mspecs[1], 'green', 'rest model specB' ],
 						 [ restLambda, shiftedFlux[0], 'orange', 'shift model specA' ],
 						 [ restLambda, shiftedFlux[1], 'purple', 'shift model specB' ]],
-						[params[0],params[0]], 'model_gen');
+						[params[0][0], params[0][1]], 'Binary Model Gen - Prelim. Proc.', folder='model_gen');
 
 	return totalFlux

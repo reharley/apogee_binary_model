@@ -6,6 +6,7 @@ model_plots/
 obs_data/
 test_directory/
 plots/
+lists/chi2/
 *.sh
 *.json
 *.png

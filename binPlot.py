@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-def plotDeltaVCheck(locationID, apogeeID, visit, plots, teff, title, folder='deltaV_check'):
+def plotDeltaVCheck(locationID, apogeeID, visit, plots, params, title, range=[16650, 16800], folder='deltaV_check', dpi=None):
 	'''
 	Creates the plot to generate a visual aid in checking the doppler shift on the binary.
 	The plot is saved in './plots/deltaV_check/locationID/apogeeID/'
@@ -19,14 +19,18 @@ def plotDeltaVCheck(locationID, apogeeID, visit, plots, teff, title, folder='del
 							 [ restLambda, mspec[1], 'green', 'rest model specB' ],
 							 [ restLambda, cspec, 'orange', 'cont-norm spec' ],
 							 [ restLambda, shiftedFlux, 'purple', 'shift model specA' ]],
-							params[0], 'Delta V Shift')
+							[ params[0][1], params[0][1]], 'Delta V Shift')
 
 	:param locationID: The location ID of the binary.
 	:param apogeeID: The apogee ID of the binary.
 	:param visit: The visit we are using to test against.
 	:param plots: A multi-dimensional array containing the arguments for plt.plot. Format in example
-	:param teff: The Teff temperatures the model was generated with. format: [ Teff1, Teff2 ]
+	:param params: Relevant parameters the model was generated with. format: [ Teff1, Teff2, FluxRatio ]
 	:param title: The title of the figure
+	:param range: The range to limit the plot by (default=[16650, 16800])
+	:param folder: The folder to save the plot in (default='deltaV_check')
+	:param dpi: The resolution in dots per inch. If None it will default to the value. 
+		For more details: http://matplotlib.org/api/pyplot_api.html?highlight=savefig#matplotlib.pyplot.savefig
 	'''
 	# Create path
 	path = 'plots/' + folder + '/' + str(locationID) + '/' + apogeeID + '/'
@@ -46,11 +50,15 @@ def plotDeltaVCheck(locationID, apogeeID, visit, plots, teff, title, folder='del
 	ax.legend(handles, labels, loc='best')
 
 	ax.set_ylabel(r'$f/f_c(\lambda)$')
-	ax.set_xlabel(r'$\lambda$ - A')
-	ax.set_xlim(16650, 16800)
+	ax.set_xlabel(r'$\lambda - \AA$')
+	if (range != None):
+		ax.set_xlim(16650, 16800)
 	plt.title(title, loc='left')
 	ax.text(0, 0.95, str(locationID) + ', ' + apogeeID + '    Visit: ' + str(visit), ha='left', transform=ax.transAxes)
-	plt.savefig(path + str(int(teff[0])) + '_' + str(int(teff[1])) + '_' + str(visit) + '.png', format='png', dpi=300)
+	if (len(params) < 3):
+		plt.savefig(path + str(visit) +  '_' + str(int(params[0])) + '_' + str(int(params[1])) + '.png', format='png', dpi=dpi)
+	else:
+		plt.savefig(path + str(visit) +  '_' + str(int(params[0])) + '_' + str(int(params[1])) + '_' + str(round(params[2], 2)) + '.png', format='png', dpi=dpi)
 	plt.clf()
 	plt.close('all')
 
@@ -85,7 +93,7 @@ def plotCOMPCCF(locationID, apogeeID, visit, shift, plots, params, normed, folde
 	for plot in plots:
 		ax.plot(plot[0], color=plot[1], label=plot[2])
 
-	ax.set_xlabel('CCF Indecies')
+	ax.set_xlabel('CCF Indicies')
 	ax.set_ylabel('Agreement')
 	ax.text(0, 0.95, str(locationID) + ', ' + apogeeID + '    Visit: ' + str(visit) + ' shift (km/s): ' + str(shift), ha='left', transform=ax.transAxes)
 	handles, labels = ax.get_legend_handles_labels()
@@ -132,7 +140,7 @@ def plotCCF(locationID, apogeeID, visit, ccf, params, normed, folder='CCF'):
 	fig.subplots_adjust(top=0.85)
 	
 	ax.plot(ccf)
-	ax.set_xlabel('CCF Indecies')
+	ax.set_xlabel('CCF Indicies')
 	ax.set_ylabel('Agreement')
 	ax.text(0, 0.95, str(locationID) + ', ' + apogeeID + '    Visit: ' + str(visit), ha='left', transform=ax.transAxes)
 	ax.text(0.99, .67, table, ha='right', va='bottom', transform=ax.transAxes)
