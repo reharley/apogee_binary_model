@@ -10,6 +10,7 @@ lists/chi2/
 *.sh
 *.json
 *.png
+*.nml
 .localized
 vsEnvironSetup.py
 vsEnvironSetup.pyc

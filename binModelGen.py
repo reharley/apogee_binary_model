@@ -11,6 +11,7 @@ parameters for optimization. (To probably 6 of each).
 import BinPlot
 import numpy as np
 import scipy.constants as const
+from ModelParams import ModelParams
 import apogee.tools.read as apread
 import apogee.spec.plot as splot
 from apogee.modelspec import ferre
@@ -93,7 +94,7 @@ def shiftFlux(spec, vel):
 		shiftedFlux = np.interp(restLambda, shiftLambda, spec)
 	return shiftedFlux
 
-def binaryModelGen(locationID, apogeeID, params, visit, plot=True):
+def binaryModelGen(locationID, apogeeID, params, visit, ipf=None, ipg=None, plot=True):
 	'''
 	Interpolates the spectra of the individual stars in the binary using some initial parameters and their velocity
 	difference.
@@ -103,12 +104,27 @@ def binaryModelGen(locationID, apogeeID, params, visit, plot=True):
 	:param params: The paramters to test against the observed data.
 		format: [ [Teff1, ...], [logg1, ...], [metals1, ...], [am1, ...], [nm1, ...], [cm1, ...]]
 	:param visit: The visit to test against.
+	:param ip: The interpolator instance that keeps running ferre. Should be faster to keep using this instead. (default=None)
+	:param plot: If true plots each component in the binary in 'plots/model_gen' (default=True)
 	:returns: The binary model flux and the maximum value from the cross correlation function between the modeled
 	totalFlux and the continuum-normalized spectrum. (totalFlux, max)
 	'''
 	# Generate models (flux1, flux2)
-	mspecs = ferre.interpolate(params[0], params[1], params[2],
-							  params[3], params[4], params[5])
+	if (np.logical_and(ipf == None, ipg == None)):
+		# todo: put in condition for both gk and f libraries
+		mspecs = ferre.interpolate(params[0], params[1], params[2],	params[3], params[4], params[5])
+	else:
+		if (params[0][0] > 6000.):
+			mspec1 = ipf(params[0][0], params[1][0], params[2][0], params[3][0], params[4][0], params[5][0])
+		else:
+			mspec1 = ipg(params[0][0], params[1][0], params[2][0], params[3][0], params[4][0], params[5][0])
+		if (params[0][1] > 6000.):
+			mspec2 = ipf(params[0][1], params[1][1], params[2][1], params[3][1], params[4][1], params[5][1])
+		else:
+			mspec2 = ipg(params[0][1], params[1][1], params[2][1], params[3][1], params[4][1], params[5][1])
+		
+		mspecs = [ mspec1, mspec2 ]
+	
 	for mspec in mspecs:
 		mspec[np.isnan(mspec)] = 0.
 	
@@ -136,3 +152,28 @@ def binaryModelGen(locationID, apogeeID, params, visit, plot=True):
 						[params[0][0], params[0][1]], 'Binary Model Gen - Prelim. Proc.', folder='model_gen');
 
 	return totalFlux
+
+def combineFlux(compA, compB):
+	'''
+	Combines the flux of two stars
+
+	:param compA: [in] The flux of one component of the binary
+	:param compB: [in] The flux of the other component of the binary
+	:return: The combined flux
+	'''
+	return (compA + compB) / 2.0
+
+def genComponent(modelParams, ipf, ipg):
+	'''
+	Generates the model of the given parameters defined in the ModelParams object
+	
+	:param modelParams: [in] The model parameters to generate the model with
+	:param ipf: [in] The interpolator instance running the 'F' library
+	:param ipg: [in] The interpolator instance running the 'GK' library
+	:return: The model spectrum of the given parameters
+	'''
+	modelParams.checkParams()
+	if (modelParams.teff > 6000.):
+			return ipf(modelParams.teff, modelParams.logg, modelParams.metals, modelParams.alphafe, modelParams.nfe, modelParams.cfe)
+	else:
+		return ipg(modelParams.teff, modelParams.logg, modelParams.metals, modelParams.alphafe, modelParams.nfe, modelParams.cfe)

@@ -2,7 +2,7 @@
 import vsEnvironSetup
 vsEnvironSetup.setVariables()
 
-import binPlot
+import BinPlot
 from gif_gen import gifGen
 import numpy as np
 import scipy
@@ -37,14 +37,12 @@ for i in range(len(locationIDs)):
 	nvisits = header['NVISITS']
 	print('Plotting: ' + locationIDs[i] + ', ' + apogeeIDs[i] + ', nvisits: ' + str(nvisits))
 	print(str(i + 1) + '/' + str(targetCount) + ' targets completed')
+	specs = apread.apVisit(apogeeID, ext=1, header=False)
 	for visit in range(1, nvisits):
 		data = apread.apStar(locationID, apogeeID, ext=9, header=False)
-		spec = apread.apStar(locationID, apogeeID, ext=1, header=False)
-		specerr = apread.apStar(locationID, apogeeID, ext=2, header=False)
 		ccf = data['CCF'][0]
+		spec = specs[visit - 1]
 		if (nvisits != 1):
-			spec = apread.apStar(locationID, apogeeID, ext=1, header=False)[1+visit]
-			specerr = apread.apStar(locationID, apogeeID, ext=2, header=False)[1+visit]
 			ccf = data['CCF'][0][1+visit]
 		
 		params = [ 	[data['TEFF'][0], 5500., 3500.],	# effective temperature
@@ -70,8 +68,8 @@ for i in range(len(locationIDs)):
 		'''aspec= np.reshape(spec,(1,len(spec)))
 		aspecerr= np.reshape(specerr,(1,len(specerr)))
 		cont= spec / continuum.fit(aspec,aspecerr,type='aspcap')[0]'''
-		spec[np.where(np.isnan(spec))] = 0.0
-		cont = spec / max(spec)
+		'''spec[np.where(np.isnan(spec))] = 0.0
+		cont = spec / max(spec)'''
 		# Generate the wavelength grid
 		restLambda = splot.apStarWavegrid()
 		
@@ -79,35 +77,34 @@ for i in range(len(locationIDs)):
 		velocityShift = 0
 
 		for mspec in mspecs:
-			# nan_vals = np.where(np.isnan(mspec))[0]
-			nan_vals = np.where(spec == 0.0)[0]
+			print(mspec.shape)
+			nan_vals = np.where(np.isnan(mspec))[0]
+			# nan_vals = np.where(spec == 0.0)[0]
 			chip_ranges = [(nan_vals[i] + 1, nan_vals[i+1]) for i in range(len(nan_vals) - 1) if nan_vals[i+1]!=nan_vals[i]+1]
 			mspec[np.where(np.isnan(mspec))[0]] = 0.0
 			ycorr = np.array([])
-			lagrange = 200
+			lagrange = 400
 			chipSize = 0
 			# ycorr = scipy.correlate(cont[chip_ranges[0][0] - 100:chip_ranges[2][1] + 100], mspec[chip_ranges[0][0] - 100:chip_ranges[2][1] + 100], mode="full")
-			for chipRange in chip_ranges:
+			for i, chipRange in enumerate(chip_ranges):
+				chip = spec[i]
+				print(np.where(chip == 0.0))
+				chip[np.where(chip <= 0.01)[0]] = 0.0
+				cont = chip / max(chip)
 				if (chipSize < chipRange[1] - chipRange[0]):
 					chipSize = chipRange[1] - chipRange[0]
 				midPoint = chipRange[0] + (chipRange[1] - chipRange[0])/2
-
-				chipCCF = scipy.correlate(cont[chipRange[0]:chipRange[1]], mspec[chipRange[0]:chipRange[1]], mode="full")
+				visitMid = 2046
+				visitRange = 1217#1277#1338#1460 #1894 / 2 lowest model chip range... #2046 # 4092 / 2
+				'''lo = midPoint-visitRange
+				if (midPoint-visitRange < 0):'''
+				print(len(mspec[midPoint - visitRange:midPoint + visitRange - 1]))
+				chipCCF = scipy.correlate(mspec[midPoint - visitRange:midPoint + visitRange - 1],cont,  mode="full")
 				
 				if (ycorr.size == 0):
 					ycorr = chipCCF
 				else:
-					diff = (chipCCF.size - ycorr.size) / 2
-					if (diff > 0):
-						ycorr = np.append(np.zeros(diff + 1), ycorr)
-						ycorr = np.append(ycorr, np.zeros(diff))
-						# chipCCF = chipCCF[diff:]
-					elif (diff < 0):
-						chipCCF = np.append(np.zeros(-diff), chipCCF)
-						chipCCF = np.append(chipCCF, np.zeros(-diff))
-						# ycorr = ycorr[-diff:]
-				ycorr+= chipCCF
-				
+					ycorr+= chipCCF
 				
 			ycorr/= len(chip_ranges)
 			ycorr-= np.median(ycorr)
@@ -118,8 +115,10 @@ for i in range(len(locationIDs)):
 			lags = xcorr - (chip_ranges[0][1] - chip_ranges[0][0] - 1)
 			temp = np.where(np.logical_or(lags == -lagrange, lags == lagrange))[0]
 			ycorr_diff = ycorr - scipy.ndimage.filters.gaussian_filter1d(ycorr, 100)
-			lags = lags[temp[0]:temp[1]]
-			ycorr_diff = ycorr_diff[temp[0]:temp[1]]
+			'''lags = lags[temp[0]:temp[1]]
+			ycorr_diff = ycorr_diff[temp[0]:temp[1]]'''
+			plt.plot(ycorr_diff)
+			plt.show()
 			ccfs.append(ycorr_diff)
 
 			# Get the pixel shift we need to correct for
@@ -137,17 +136,12 @@ for i in range(len(locationIDs)):
 		# The flux of the model
 		shiftedFlux = np.interp(restLambda, shiftLambda, mspecs[0])
 
-		binPlot.plotCOMPCCF(locationID, apogeeID, visit, velocityShift, 
+		BinPlot.plotCOMPCCF(locationID, apogeeID, visit, velocityShift, 
 							[	[ccfs[0], 'green', 'approx Teff'],
 								[ccfs[1], 'blue', 'Hot Teff'],
 								[ccfs[2], 'orange', 'Cool Teff']],
 							params, '',folder='comparison_CCF')
-		binPlot.plotCOMPCCF(locationID, apogeeID, visit, header['VRAD' + str(visit)], [[ccf, 'blue', 'Off. CCF']], params, '',folder='comparison_CCF_OFF')
-		binPlot.plotDeltaVCheck(locationID, apogeeID, visit,
-							[	[ restLambda, mspecs[0], 'blue', 'rest model' ],
-								[ restLambda, cont, 'orange', 'cont-norm v. spec' ],
-								[ restLambda, shiftedFlux, 'green', 'shifted model' ]],
-								[0.0,0.0], 'Delta V Shift', folder='comparison_deltav');
+		BinPlot.plotCOMPCCF(locationID, apogeeID, visit, header['VRAD' + str(visit)], [[ccf, 'blue', 'Off. CCF']], params, '',folder='comparison_CCF_OFF')
 
 gifGen('comparison_CCF/')
 gifGen('comparison_CCF_OFF/')
