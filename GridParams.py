@@ -66,7 +66,6 @@ class GridParams:
 		self.maxRVA = rva + 2.
 		self.maxRVB = rvb + 2.
 
-	
 	def setParams(self, visit, teffA, teffB, fluxRatio, rvA, rvB, chi2):
 		'''
 		Sets the given values to GridParam object and adjusts the ranges and step size of the target.
@@ -88,7 +87,24 @@ class GridParams:
 		self.chi2 = chi2
 		
 		# Adjust parameter limits depending on chi2
-		if (chi2 < 100.):
+		
+		if (chi2 < 25.):
+			self.maxTeffA = teffA + 25.
+			self.minTeffA = teffA - 25.
+			self.teffStepA = 10.
+			self.maxTeffB = teffB + 25.
+			self.minTeffB = teffB - 25.
+			self.teffStepB = 10.
+			self.maxFluxRatio = fluxRatio + 0.02
+			self.minFluxRatio = fluxRatio - 0.02
+			self.fluxStep = 0.01
+			self.maxRVA = rvA + 1.
+			self.minRVA = rvA - 1.
+			self.rvAStep = 0.1
+			self.maxRVB = rvB + 1.
+			self.minRVB = rvB - 1.
+			self.rvBStep = 0.1
+		elif (chi2 < 100.):
 			self.maxTeffA = teffA + 50.
 			self.minTeffA = teffA - 50.
 			self.teffStepA = 25.
@@ -104,7 +120,6 @@ class GridParams:
 			self.maxRVB = rvB + 1.
 			self.minRVB = rvB - 1.
 			self.rvBStep = 0.1
-			
 		else:
 			self.maxTeffA = teffA + 100.
 			self.minTeffA = teffA - 100.
@@ -134,13 +149,13 @@ class GridParams:
 		Constructs the string header to add to the chi2 file
 		:return: The string header to the chi2.lis file
 		'''
-		return '{0}{1}\t\t\t\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\n'.format('Field ID', '2MID', 'visit', 'TeffA', 'TeffB', 'Flux Ratio', 'RVA', 'RVB', 'Passes', 'chi2')
+		return '{0}{1}\t\t\t\t{2}\t{3}\t{4}\t{5}\t{6}\t\t{7}\t\t{8}\t{9}\n'.format('Field ID', '2MID', 'visit', 'TeffA', 'TeffB', 'Flux Ratio', 'RVA', 'RVB', 'Passes', 'chi2')
 	
 	def toString(self):
 		'''
 		Constructs string to add to the chi2 file
 		:return: The formatted string containing the gridParams data
 		'''
-		return '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t\t{9}\n'.format(self.locationID, self.apogeeID, self.visit,
+		return '{0}\t{1}\t{2}\t\t{3}\t{4}\t{5}\t\t{6}\t{7}\t{8}\t\t{9}\n'.format(self.locationID, self.apogeeID, self.visit,
 					round(self.modelParamA.teff, 2), round(self.modelParamB.teff, 2), round(self.modelParamB.fluxRatio, 2),
 					round(self.modelParamA.rv, 2), round(self.modelParamB.rv, 2), self.passes, round(self.chi2))

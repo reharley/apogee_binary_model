@@ -103,11 +103,14 @@ def targetGrid(gridParam,plot=True):
 				for k in range(nrangeFluxRatio):
 					gridParam.modelParamB.fluxRatio = rangeFluxRatio[k]
 					componentBR = componentB * rangeFluxRatio[k]
+					if (rangeFluxRatio[k] < 0.3):
+						print('uh-oh')
 					gridParam.getRVs(visit)
 					componentAS = bm.shiftFlux(componentA, gridParam.modelParamA.rv)
 					componentBS = bm.shiftFlux(componentBR, gridParam.modelParamB.rv)
 					binaryFlux = bm.combineFlux(componentAS, componentBS)
 					chi2[visit - 1][i][j][k] = ferre._chi2(binaryFlux,cont,conterr) / (len(binaryFlux) - 5)
+					gridParam.chi2 = chi2[visit - 1][i][j][k]
 					fn.write(gridParam.toString())
 					if (plot == True):
 						restLambda = splot.apStarWavegrid()

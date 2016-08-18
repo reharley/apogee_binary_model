@@ -84,12 +84,12 @@ def grid(passCount, gridParams):
 			
 			temp = ttarget.end()
 			ttargetSum+= temp
-			print('Target run time: ' + str(round(temp, 2)))
-		temp = ttarget.end()
-		ttargetSum+= temp
+			print('Target run time: ' + str(round(temp, 2)) + str('s'))
+		temp = tpass.end()
+		tpassSum+= temp
 		print('Pass run time: ' + str(round(temp, 2)) + str('s'))
 		print('Average target run time: ' + str(round(ttargetSum/targetCount, 2)) + str('s'))
-	print('Average target run time: ' + str(round(tpassSum/passCount, 2)) + str('s'))
+	print('Average pass run time: ' + str(round(tpassSum/passCount, 2)) + str('s'))
 
 def writeGridToFile(gridParams, filename='lists/chi2.lis'):
 	'''
