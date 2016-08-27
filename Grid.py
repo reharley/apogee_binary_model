@@ -13,13 +13,13 @@ def checkPreviousData(gridParams, filename='lists/chi2.lis'):
 	:param filename: File to check for minimized chi2 values (default='lists/chi2.lis')
 	'''
 	# Check for previous fitted data
-	apogChi2s_file = teffAs_file = teffBs_file = fluxRatios_file = np.array([])
+	'''apogChi2s_file = teffAs_file = teffBs_file = fluxRatios_file = np.array([])
 	if (os.path.isfile(filename) == True):
 		apogChi2s_file, teffAs_file, teffBs_file, fluxRatios_file, chi2_file = np.loadtxt(filename, unpack=True, skiprows=1, usecols=[1, 3, 4, 5, 9], delimiter=None, dtype=str)
 		print(teffBs_file)
 		if (apogChi2s_file.size > 0):
 			for i, apogeeID in enumerate(apogeeIDs):
-				index = np.where(apogChi2s_file == apogeeID)[0]
+				index = np.where(apogChi2s_file == apogeeID)[0]'''
 				# gridParams[i].setParams(0, float(teffAs_file[index]), float(teffBs_file[index]), float(fluxRatios_file[index]), )
 
 def cleanSubdirs(subdirs):
@@ -47,7 +47,7 @@ def gatherChi2Reports(folder='lists/chi2/'):
 		for fn in file_names:
 			print(fn)
 
-def grid(passCount, gridParams):
+def grid(passCount, gridParams, minimizedVisitParams):
 	'''
 	The binary model fitting grid. This function will fit the targets of the following parameters:
 	 	1) Teff of component A
@@ -62,6 +62,7 @@ def grid(passCount, gridParams):
 
 	:param passCount: [in] The amount of maximum amount of passes the grid will go through
 	:param gridParams: [in/out] The list of GridParams that contain the targets fitting data (built in runGrid)
+	:param minimizedVisitParams: [out] All the visits with the minimized chi2 parameters
 	'''
 	targetCount = len(gridParams)
 	tpass = Timer()
@@ -80,7 +81,7 @@ def grid(passCount, gridParams):
 			print('On target: ' + str(i+1) + '/' + str(targetCount))
 			ttarget.start()
 			
-			bg.targetGrid(gridParams[i], plot=False)
+			bg.targetGrid(gridParams[i], minimizedVisitParams, plot=False)
 			
 			temp = ttarget.end()
 			ttargetSum+= temp
@@ -105,19 +106,29 @@ def writeGridToFile(gridParams, filename='lists/chi2.lis'):
 		f.write(gridParams[i].toString())
 	f.close()
 
-def runGrid(passCount, filename='lists/binaries3.dat'):
+def runGrid(passCount, filename='lists/binaries2.dat'):
 	'''
 	Wrapper function to run the binary mofel fitting grid.
 
 	:param passCount: [in] The maximum amount of passes to run on the grid
 	:param filename: [in] The filename of the file containing a list of targets field and APOGEE ID's to use
 	'''
+	timer = Timer()
+	timer.start()
 	# Prep Grid
 	locationIDs, apogeeIDs = np.loadtxt(filename, unpack=True, delimiter=',', dtype=str)
 	targetCount = len(locationIDs)
-	gridParams = np.array([GridParams(apogeeIDs[i],locationIDs[i]) for i in range(targetCount)])
+	gridParams = np.array([GridParams(locationIDs[i], apogeeIDs[i]) for i in range(targetCount)])
 	# Use past results
 	# checkPreviousData(gridParams)
 
-	grid(passCount, gridParams)
+	minimizedVisitParams = []
+	grid(passCount, gridParams, minimizedVisitParams)
 	writeGridToFile(gridParams)
+	for i in range(len(minimizedVisitParams)):
+		filename = 'lists/chi2/' + minimizedVisitParams[i][0].locationID + '/' + minimizedVisitParams[i][0].apogeeID + '.lis'
+		if not os.path.exists('lists/chi2/' + minimizedVisitParams[i][0].locationID + '/'):
+			os.makedirs('lists/chi2/' + minimizedVisitParams[i][0].locationID + '/')
+		writeGridToFile(minimizedVisitParams[i], filename=filename)
+	
+	print('Total run time: ' + str(round(timer.end(), 2)) + str('s'))

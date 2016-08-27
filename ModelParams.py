@@ -9,7 +9,7 @@ class ModelParams:
 	nfe = 0.0			# nitrogen relative abundance
 	cfe = 0.0			# carbon relative abundance
 	fluxRatio = 1.0		# Flux ratio (1:x)
-	rv = 0.0			# VHELIO
+	rv = None			# VHELIO
 
 	def adjustParams(self, teff, fluxRatio):
 		'''
