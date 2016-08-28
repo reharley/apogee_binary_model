@@ -21,9 +21,8 @@ from apogee.spec import continuum
 
 import BinModelGen as bm
 import BinPlot
-from GridParams import GridParams
+from GridParam import GridParam
 from Timer import Timer
-
 
 def calcChi2(mspec,spec,specerr,weights=None):
 	"""Internal function that calculates the chi^2 for a given model,
@@ -127,7 +126,7 @@ def targetGrid(gridParam, minimizedVisitParams, plot=True):
 						for m in range(nrangeRVB):
 							componentBS = bm.shiftFlux(componentBR, rangeRVB[m])
 							binaryFlux = bm.combineFlux(componentAS, componentBS)
-							chi2[i][j][k][l][m] = calcChi2(binaryFlux, cont, conterr) / (len(binaryFlux) - 5)
+							chi2[i][j][k][l][m] = calcChi2(binaryFlux, shiftedSpec, conterr) / (len(binaryFlux) - 5)
 							gridParam.chi2 = chi2[i][j][k][l][m]
 							fn.write(gridParam.toString())
 							if (plot is True):
@@ -147,8 +146,8 @@ def targetGrid(gridParam, minimizedVisitParams, plot=True):
 
 	print('Average visit time: ' + str(round(timeSum/nvisits, 2)) + str('s'))
 
-	# Get minized values
-	temp = np.array([GridParams(locationID, apogeeID) for i in range(nvisits)])
+	# Get minized values for each visit
+	temp = np.array([GridParam(locationID, apogeeID) for i in range(nvisits)])
 	indices = None
 	for i in range(nvisits):
 		inds = getMinIndicies(allChi2[i])
@@ -164,4 +163,4 @@ def targetGrid(gridParam, minimizedVisitParams, plot=True):
 	minimizedVisitParams.append(temp)
 	gridParam.constructParams()
 	gridParam.setParams(indices[0], rangeTeffA[indices[1][0]], rangeTeffB[indices[1][1]], rangeFluxRatio[indices[1][2]],
-					rangeRVA[indices[1][3]], rangeRVB[indices[1][4]], allChi2[indices[0]][indices[1][0]][indices[1][1]][indices[1][2]][indices[1][3]][indices[1][4]])
+					rangeRVA[indices[1][3]], rangeRVB[indices[1][4]], indices[2])

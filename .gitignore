@@ -1,4 +1,6 @@
+__pycache__/
 .idea/
+.ipynb_checkpoints/
 .vscode/
 figures/
 martin_data/

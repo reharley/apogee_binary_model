@@ -1,9 +1,12 @@
-from Timer import Timer
-from GridParams import GridParams
-import BinaryGrid as bg
-import numpy as np
-import apogee.tools.read as apread
 import os
+
+import apogee.tools.read as apread
+import numpy as np
+
+import BinaryGrid as bg
+from GridParam import GridParam
+from Timer import Timer
+
 
 def checkPreviousData(gridParams, filename='lists/chi2.lis'):
 	'''
@@ -118,7 +121,7 @@ def runGrid(passCount, filename='lists/binaries2.dat'):
 	# Prep Grid
 	locationIDs, apogeeIDs = np.loadtxt(filename, unpack=True, delimiter=',', dtype=str)
 	targetCount = len(locationIDs)
-	gridParams = np.array([GridParams(locationIDs[i], apogeeIDs[i]) for i in range(targetCount)])
+	gridParams = np.array([GridParam(locationIDs[i], apogeeIDs[i]) for i in range(targetCount)])
 	# Use past results
 	# checkPreviousData(gridParams)
 

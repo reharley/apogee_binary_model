@@ -4,7 +4,7 @@ from BinModelGen import getRVs
 from ModelParams import ModelParams
 
 
-class GridParams:
+class GridParam:
 	'''
 	Simple wrapper to make the grid easier to use.
 	Stores the best fit params based on the grid.
