@@ -58,18 +58,7 @@ def targetGrid(gridParam, minimizedVisitParams, plot=True):
 	specs = apread.apStar(locationID, apogeeID, ext=1, header=False)
 	specerrs = apread.apStar(locationID, apogeeID, ext=2, header=False)
 	nvisits = header['NVISITS']
-
-	# Prep model params
-	gridParam.constructParams()
-
-	# Prepare grid ranges
-	rangeTeffA = np.arange(gridParam.minTeffA, gridParam.maxTeffA, gridParam.teffStepA)
-	rangeTeffB = np.arange(gridParam.minTeffB, gridParam.maxTeffB, gridParam.teffStepB)
-	rangeFluxRatio = np.arange(gridParam.minFluxRatio, gridParam.maxFluxRatio, gridParam.fluxStep)
-	nrangeTeffA = len(rangeTeffA)
-	nrangeTeffB = len(rangeTeffB)
-	nrangeFluxRatio = len(rangeFluxRatio)
-
+	
 	# chi2 = np.full((nvisits, nrangeTeffA, nrangeTeffB, nrangeFluxRatio), -1.)
 	#chi2 = np.full((nvisits, nrangeTeffA, nrangeTeffB, nrangeFluxRatio, nrangeRVA, nrangeRVB), -1.)
 	ipg = ferre.Interpolator(lib='GK')
@@ -84,6 +73,7 @@ def targetGrid(gridParam, minimizedVisitParams, plot=True):
 	timer = Timer()
 	timeSum = 0.0
 	allChi2 = []
+	visitGridParamsBuffer = []
 	for visit in range(1, nvisits + 1):
 		timer.start()
 		if (nvisits != 1):
@@ -92,15 +82,27 @@ def targetGrid(gridParam, minimizedVisitParams, plot=True):
 		else:
 			spec = specs
 			specerr = specerrs
-
-		if (gridParam.modelParamA.rv is None):
-			gridParam.getRVs(visit)
 		
+		if (len(minimizedVisitParams) == 0):
+			gridParam = GridParam(locationID, apogeeID)
+			gridParam.constructParams()
+			gridParam.getRVs(visit)
+		else:
+			gridParam = minimizedVisitParams[visit - 1]
+		visitGridParamsBuffer.append(gridParam)
+		
+		# Prepare grid ranges
+		rangeTeffA = np.arange(gridParam.minTeffA, gridParam.maxTeffA, gridParam.teffStepA)
+		rangeTeffB = np.arange(gridParam.minTeffB, gridParam.maxTeffB, gridParam.teffStepB)
+		rangeFluxRatio = np.arange(gridParam.minFluxRatio, gridParam.maxFluxRatio, gridParam.fluxStep)
 		rangeRVA = np.arange(gridParam.minRVA, gridParam.maxRVA, gridParam.rvAStep)
 		rangeRVB = np.arange(gridParam.minRVB, gridParam.maxRVB, gridParam.rvBStep)
+		nrangeTeffA = len(rangeTeffA)
+		nrangeTeffB = len(rangeTeffB)
+		nrangeFluxRatio = len(rangeFluxRatio)
 		nrangeRVA =len(rangeRVA)
 		nrangeRVB =len(rangeRVB)
-		
+
 		chi2 = np.full((nrangeTeffA, nrangeTeffB, nrangeFluxRatio, nrangeRVA, nrangeRVB), -1.)
 		print('Visit: ' + str(visit) ,'Grid dimensions: ' + str(chi2.shape))
 		# Prep Spectra
@@ -109,8 +111,6 @@ def targetGrid(gridParam, minimizedVisitParams, plot=True):
 		cont= spec / continuum.fit(aspec, aspecerr, type='aspcap')[0]
 		conterr = specerr / continuum.fit(aspec, aspecerr, type='aspcap')[0]
 		shiftedSpec = bm.shiftFlux(cont, header['VHELIO' + str(visit)])
-		cont[np.isnan(cont)] = 0.0
-		conterr[np.isnan(conterr)] = 0.0
 
 		# Run grid
 		for i in range(nrangeTeffA):
@@ -120,13 +120,16 @@ def targetGrid(gridParam, minimizedVisitParams, plot=True):
 				gridParam.modelParamB.teff = rangeTeffB[j]
 				componentB = bm.genComponent(gridParam.modelParamB, ipf, ipg)
 				for k in range(nrangeFluxRatio):
+					gridParam.modelParamB.fluxRatio = rangeFluxRatio[k]
 					componentBR = componentB * rangeFluxRatio[k]
 					for l in range(nrangeRVA):
+						gridParam.modelParamA.rv = rangeRVA[l]
 						componentAS = bm.shiftFlux(componentA, rangeRVA[l])
 						for m in range(nrangeRVB):
+							gridParam.modelParamB.rv = rangeRVB[m]
 							componentBS = bm.shiftFlux(componentBR, rangeRVB[m])
 							binaryFlux = bm.combineFlux(componentAS, componentBS)
-							chi2[i][j][k][l][m] = calcChi2(binaryFlux, shiftedSpec, conterr) / (len(binaryFlux) - 5)
+							chi2[i][j][k][l][m] = calcChi2(binaryFlux, shiftedSpec, conterr) / (len(binaryFlux) - 5.0)
 							gridParam.chi2 = chi2[i][j][k][l][m]
 							fn.write(gridParam.toString())
 							if (plot is True):
@@ -137,30 +140,35 @@ def targetGrid(gridParam, minimizedVisitParams, plot=True):
 														[ restLambda, shiftedSpec, 'green', 'shifted' ]],
 														[gridParam.modelParamA.teff,gridParam.modelParamB.teff, gridParam.modelParamB.fluxRatio],
 														'Delta V Shift', folder='grid_deltaVCheck')
-		
+
 		timeSum+=timer.end()
 		allChi2.append(chi2)
 	fn.close()
-	ipg.close()
-	ipf.close()
 
 	print('Average visit time: ' + str(round(timeSum/nvisits, 2)) + str('s'))
 
 	# Get minized values for each visit
-	temp = np.array([GridParam(locationID, apogeeID) for i in range(nvisits)])
 	indices = None
 	for i in range(nvisits):
 		inds = getMinIndicies(allChi2[i])
-		temp[i].constructParams()
-		temp[i].setParams(i + 1, rangeTeffA[inds[0]], rangeTeffB[inds[1]], rangeFluxRatio[inds[2]],
+		rangeTeffA = np.arange(visitGridParamsBuffer[i].minTeffA, visitGridParamsBuffer[i].maxTeffA, visitGridParamsBuffer[i].teffStepA)
+		rangeTeffB = np.arange(visitGridParamsBuffer[i].minTeffB, visitGridParamsBuffer[i].maxTeffB, visitGridParamsBuffer[i].teffStepB)
+		rangeFluxRatio = np.arange(visitGridParamsBuffer[i].minFluxRatio, visitGridParamsBuffer[i].maxFluxRatio, visitGridParamsBuffer[i].fluxStep)
+		rangeRVA = np.arange(visitGridParamsBuffer[i].minRVA, visitGridParamsBuffer[i].maxRVA, visitGridParamsBuffer[i].rvAStep)
+		rangeRVB = np.arange(visitGridParamsBuffer[i].minRVB, visitGridParamsBuffer[i].maxRVB, visitGridParamsBuffer[i].rvBStep)
+		nrangeTeffA = len(rangeTeffA)
+		nrangeTeffB = len(rangeTeffB)
+		nrangeFluxRatio = len(rangeFluxRatio)
+		nrangeRVA =len(rangeRVA)
+		nrangeRVB =len(rangeRVB)
+		visitGridParamsBuffer[i].setParams(i + 1, rangeTeffA[inds[0]], rangeTeffB[inds[1]], rangeFluxRatio[inds[2]],
 					rangeRVA[inds[3]], rangeRVB[inds[4]], allChi2[i][inds[0]][inds[1]][inds[2]][inds[3]][inds[4]])
-		
+
 		if (indices is None):
 			indices = [i + 1, inds, allChi2[i][inds[0]][inds[1]][inds[2]][inds[3]][inds[4]]]
 		if (allChi2[i][inds[0]][inds[1]][inds[2]][inds[3]][inds[4]] < indices[2]):
 			indices = [i + 1, inds, allChi2[i][inds[0]][inds[1]][inds[2]][inds[3]][inds[4]]]
-
-	minimizedVisitParams.append(temp)
-	gridParam.constructParams()
-	gridParam.setParams(indices[0], rangeTeffA[indices[1][0]], rangeTeffB[indices[1][1]], rangeFluxRatio[indices[1][2]],
-					rangeRVA[indices[1][3]], rangeRVB[indices[1][4]], indices[2])
+	
+	inds = getMinIndicies(allChi2)
+	gridParam = visitGridParamsBuffer[inds[0]]
+	return gridParam, visitGridParamsBuffer

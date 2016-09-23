@@ -14,22 +14,24 @@ class GridParam:
 	minTeffA = 3500.			# Default min range of the Teff of the secondary component varying
 	maxTeffB = 7999.			# Default max range of the Teff of the secondary component varying
 	minTeffB = 3500.			# Default min range of the Teff of the secondary component varying
-	minFluxRatio = 0.3		# Default min range of the flux ratio of the secondary component varying
-	maxFluxRatio = 1.0		# Default max range of the flux ratio of the secondary component varying
-	minRVA = -200.		# Default max range of the flux ratio of the secondary component varying
-	minRVB = -200.		# Default max range of the flux ratio of the secondary component varying
-	maxRVA = 200.		# Default max range of the flux ratio of the secondary component varying
-	maxRVB = 200.		# Default max range of the flux ratio of the secondary component varying
+	minFluxRatio = 0.3			# Default min range of the flux ratio of the secondary component varying
+	maxFluxRatio = 1.0			# Default max range of the flux ratio of the secondary component varying
+	minRVA = -200.				# Default max range of the flux ratio of the secondary component varying
+	minRVB = -200.				# Default max range of the flux ratio of the secondary component varying
+	maxRVA = 200.				# Default max range of the flux ratio of the secondary component varying
+	maxRVB = 200.				# Default max range of the flux ratio of the secondary component varying
 	teffStepA = 50.
 	teffStepB = 50.
 	rvAStep = 20.
 	rvBStep = 20.
 	fluxStep = 0.1
-	modelParamA = None # Contains the parameters for the model
-	modelParamB = None # Contains the parameters for the model
+	modelParamA = None 			# Contains the parameters for the model
+	modelParamB = None 			# Contains the parameters for the model
 	visit = 0
-	chi2 = -1.0
+	chi2 = -2.0
 	passes = 0
+	spec = None
+	specErr = None
 	def __init__(self, loc_ID, apog_ID):
 		'''
 		Constructor
@@ -62,6 +64,7 @@ class GridParam:
 		:param visit: [in] The visit to get the rvs of
 		'''
 		rva, rvb = getRVs(self.locationID, self.apogeeID, visit)
+		self.visit = visit
 		self.modelParamA.rv = rva
 		self.modelParamB.rv = rvb
 		self.minRVA = rva - 2.
@@ -176,6 +179,6 @@ class GridParam:
 		Constructs string to add to the chi2 file
 		:return: The formatted string containing the gridParams data
 		'''
-		return '{0}\t{1}\t{2}\t\t{3}\t{4}\t{5}\t{6}\t\t{7}\t{8}\t\t{9}\n'.format(self.locationID, self.apogeeID, self.visit,
+		return '{0}\t{1}\t{2}\t\t{3}\t{4}\t{5}\t\t{6}\t{7}\t{8}\t\t{9}\n'.format(self.locationID, self.apogeeID, self.visit,
 					round(self.modelParamA.teff, 2), round(self.modelParamB.teff, 2), round(self.modelParamB.fluxRatio, 2),
 					round(self.modelParamA.rv, 2), round(self.modelParamB.rv, 2), self.passes, round(self.chi2))

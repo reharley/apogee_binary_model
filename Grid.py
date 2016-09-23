@@ -1,3 +1,9 @@
+'''
+A set of wrappers to run the binary target grid binaryGrid to pass it multiple targets and record data.
+
+The data recorded is in lists/chi2/ which contains all the minimized chi2 parameters per visit.
+And also the lists/chi2.lis containing the smallest minimized chi2 value of the target as a whole.
+'''
 import os
 
 import apogee.tools.read as apread
@@ -42,7 +48,7 @@ def gatherChi2Reports(folder='lists/chi2/'):
 	able to complete.
 	:param folder:
 	'''
-	oldDir = os.getcwd()
+	# oldDir = os.getcwd()
 	os.chdir(folder)
 	subdirs = cleanSubdirs(os.listdir('.'))
 	for subdir in subdirs:
@@ -83,9 +89,9 @@ def grid(passCount, gridParams, minimizedVisitParams):
 			print('Fitting: ' + locationID + ', ' + apogeeID + ', nvisits: ' + str(nvisits))
 			print('On target: ' + str(i+1) + '/' + str(targetCount))
 			ttarget.start()
-			
-			bg.targetGrid(gridParams[i], minimizedVisitParams, plot=False)
-			
+
+			gridParams[i], minimizedVisitParams[i] = bg.targetGrid(gridParams[i], minimizedVisitParams[i], plot=False)
+
 			temp = ttarget.end()
 			ttargetSum+= temp
 			print('Target run time: ' + str(round(temp, 2)) + str('s'))
@@ -121,11 +127,12 @@ def runGrid(passCount, filename='lists/binaries2.dat'):
 	# Prep Grid
 	locationIDs, apogeeIDs = np.loadtxt(filename, unpack=True, delimiter=',', dtype=str)
 	targetCount = len(locationIDs)
-	gridParams = np.array([GridParam(locationIDs[i], apogeeIDs[i]) for i in range(targetCount)])
+	gridParams = [GridParam(locationIDs[i], apogeeIDs[i]) for i in range(targetCount)]
+	minimizedVisitParams = [np.array([]) for i in range(targetCount)]
+
 	# Use past results
 	# checkPreviousData(gridParams)
 
-	minimizedVisitParams = []
 	grid(passCount, gridParams, minimizedVisitParams)
 	writeGridToFile(gridParams)
 	for i in range(len(minimizedVisitParams)):
@@ -133,5 +140,5 @@ def runGrid(passCount, filename='lists/binaries2.dat'):
 		if not os.path.exists('lists/chi2/' + minimizedVisitParams[i][0].locationID + '/'):
 			os.makedirs('lists/chi2/' + minimizedVisitParams[i][0].locationID + '/')
 		writeGridToFile(minimizedVisitParams[i], filename=filename)
-	
+
 	print('Total run time: ' + str(round(timer.end(), 2)) + str('s'))
