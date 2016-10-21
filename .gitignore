@@ -9,6 +9,7 @@ obs_data/
 test_directory/
 plots/
 lists/all_chi2/
+lists/BinaryFinder/
 lists/chi2/
 *.sh
 *.json

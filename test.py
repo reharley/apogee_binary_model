@@ -16,6 +16,7 @@ from Queue import Queue
 import time
 from multiprocessing import Process
 from Timer import Timer
+import BinPlot
 
 def calcChi2(mspec,spec,specerr,weights=None):
 	"""Internal function that calculates the chi^2 for a given model,
@@ -38,7 +39,7 @@ def MCMC(gridParam, nWalkers=20, nDim=5, threads=4, nSteps=10):
 	sampler.run_mcmc(position, nSteps)
 	return sampler
 
-def fitModel(guess, gridParam):
+def fitModel(guess, gridParam, plot=False):
 	if not guess is None:
 		gridParam.modelParamA.teff = guess[0]
 		gridParam.modelParamB.teff = guess[1]
@@ -57,6 +58,11 @@ def fitModel(guess, gridParam):
 
 	# Combine the flux as a binary
 	binaryFlux = bm.combineFlux(componentAS, componentBS)
+
+	# Make the plots
+	if (plot == True):
+		BinPlot.plotDeltaVCheck(gridParam, gridParam.visit, binaryFlux, 'Emcee Results', folder='emcee_deltaV')
+		BinPlot.plotDeltaVCheck(gridParam, gridParam.visit, binaryFlux, 'Emcee Results', folder='emcee', range=None)
 
 	gridParam.chi2 = calcChi2(binaryFlux, gridParam.spec, gridParam.specErr) / (len(binaryFlux) - 5.0)
 	return -1.0 * gridParam.chi2
@@ -89,8 +95,9 @@ def runTarget(gridParam):
 		gridParam.spec = bm.shiftFlux(cont, header['VHELIO' + str(visit)])
 		gridParam.specErr = bm.shiftFlux(conterr, header['VHELIO' + str(visit)])
 		gridParam.getRVs(visit)
+		gridParam.visit = visit
 
-		nSteps = 100
+		nSteps = 200
 		sampler = MCMC(gridParam, nSteps=nSteps)
 		circular_samples = sampler.chain[:, :, :].reshape((-1, 5))
 		results = np.asarray(list(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
@@ -114,7 +121,7 @@ def runTarget(gridParam):
 		gridParam.modelParamA.rv = results[3][0]
 		gridParam.modelParamB.rv = results[4][0]
 
-		gridParam.chi2 = -1.0 * fitModel(None, gridParam)
+		gridParam.chi2 = -1.0 * fitModel(None, gridParam, plot=True)
 		gridParamVists.append(gridParam)
 	
 
@@ -150,10 +157,13 @@ while running:
 	time.sleep(2)'''
 timer = Timer()
 visitSum = 0.0
-badheader, header = apread.apStar(locationIDs[i], apogeeIDs[i], ext=0, header=True, dr='13')
-nvisits = header['NVISITS']
-runTarget(targets[0])
-visitSum+= timer.end() / nvisits
+for i in range(targetCount):
+	badheader, header = apread.apStar(locationIDs[i], apogeeIDs[i], ext=0, header=True, dr='13')
+	nvisits = header['NVISITS']
+	timer.start()
+	runTarget(targets[i])
+	visitSum+= timer.end() / nvisits
+	print(visitSum)
 print('avg visit time:', visitSum/targetCount)
 
 '''
