@@ -83,7 +83,6 @@ def getMaxPositions(x, yBufferRange):
 				max2 = 'none'
 	except ValueError:
 		max2 = 'none'
-		print('not this one')
 	
 	# Double check that we are returning different positions
 	if str(max1) == str(max2):
@@ -91,22 +90,28 @@ def getMaxPositions(x, yBufferRange):
 	
 	return max1, max2
 
+ranger = 0.35
+filename = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder/' + str(ranger) + '/interestingTargets.csv'
+locationIDs, apogeeIDs = np.loadtxt(filename, unpack=True, delimiter=',', dtype=str)
+targetCount = len(locationIDs)
+print(ranger, 'targets')
 
-locationID = 4425
-apogeeID = '2M01311387+6541494'
-print(locationID, apogeeID)
-badheader, header = apread.apStar(locationID, apogeeID, ext=0, dr='13', header=True)
-data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='13')
+for i in range(targetCount):
+	locationID = locationIDs[i]
+	apogeeID = apogeeIDs[i]
+	print(locationID, apogeeID)
+	badheader, header = apread.apStar(locationID, apogeeID, ext=0, dr='13', header=True)
+	data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='13')
 
-nvisits = header['NVISITS']
-for visit in range(1, nvisits + 1):
+	nvisits = header['NVISITS']
+	
 	if (nvisits != 1):
-		ccf = data['CCF'][0][1 + visit]
+		ccf = data['CCF'][0][1 + 1]
 	else:
 		ccf = data['CCF'][0]
 	
-	max1, max2 = getMaxPositions(ccf, 0.35)
-	print(max2, pos1, pos2)
+	max1, max2 = getMaxPositions(ccf, ranger)
+	print(max2)
 	print(calcR(ccf))
 	if str(max1) != 'none':
 		plt.scatter(max1, ccf[max1], color='red', s=30)

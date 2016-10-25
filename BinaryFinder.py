@@ -53,11 +53,11 @@ def getMaxPositions(x, yBufferRange):
 		if (np.abs(x[max1] - x[max2]) < yBufferRange):
 			max2 = 'none'
 		'''
-		if (max2 - pos1 < max2 - pos2):
+		if (np.abs(max2 - pos1) < np.abs(max2 - pos2)):
 			# Check if it's within the yBufferRange
 			if (x[max2] - x[pos1] < yBufferRange):
 				max2 = 'none'
-		elif (max2 - pos1 > max2 - pos2):
+		elif (np.abs(max2 - pos1) > np.abs(max2 - pos2)):
 			if (x[max2] - x[pos2] < yBufferRange):
 				max2 = 'none'
 	except ValueError:
