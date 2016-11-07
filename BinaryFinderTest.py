@@ -140,16 +140,13 @@ def reportTargets(targets, ranger, filename):
 	f.close()
 
 def runFinder(ranger):
-	data = apread.allStar(dr='13')
-	apogeeIDs = data['APOGEE_ID']
-	locationIDs = data['LOCATION_ID']
 	
-	targetCount = len(apogeeIDs)
+	targetCount = 1
 	interestingTargets = []
 	skippedTargets = []
 	for i in range(targetCount):
-		locationID = locationIDs[i]
-		apogeeID = apogeeIDs[i]
+		locationID = 4590
+		apogeeID = '2M00050265+0116236'
 		interestingTarget = False
 
 		try:
@@ -171,7 +168,7 @@ def runFinder(ranger):
 
 			pos = getMaxPositions(ccf, ranger)
 			r = calcR(ccf)
-			if (str(pos[0]) != 'none') and ((str(pos[1]) != 'none')):
+			if (str(pos[0]) != 'none') and (str(pos[1]) != 'none'):
 				interestingTarget = True
 				# r = calcR(ccf, pos[0], pos[1])
 			'''elif r < 1.0:
@@ -179,7 +176,7 @@ def runFinder(ranger):
 
 			positions.append([pos[0], pos[1], r])
 
-		reportPositions(locationID, apogeeID, ranger, positions)
+		# reportPositions(locationID, apogeeID, ranger, positions)
 		if interestingTarget == True:
 			interestingTargets.append([locationID, apogeeID])
 			interestingTarget = False
@@ -191,21 +188,3 @@ def runFinder(ranger):
 
 print('\n------------Range ' + str(0.25) + '------------\n')
 runFinder(0.25)
-print('done run tho')
-ranges = Queue()
-spaceRanger = np.linspace(0.0, 0.5, num=100)
-[ranges.put(spaceRanger[i]) for i in range(len(spaceRanger))]
-procs = [Process(target=runFinder, args=(ranges.get_nowait(),)), Process(target=runFinder, args=(ranges.get_nowait(),)),
-		 Process(target=runFinder, args=(ranges.get_nowait(),)), Process(target=runFinder, args=(ranges.get_nowait(),))]
-for i in range(3):
-	procs[i].start()
-
-while ranges.empty() == False:
-	for i in range(3):
-		if procs[i].is_alive() == False:
-			del(procs[i])
-			if ranges.empty() == False:
-				ranger = ranges.get_nowait()
-				print('\n------------Range ' + str(ranger) + '------------\n')
-				procs.append(Process(target=runFinder, args=(ranger,)))
-				procs[3].start()

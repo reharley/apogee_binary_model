@@ -75,25 +75,30 @@ def getMaxPositions(x, yBufferRange):
 			max2 = 'none'
 		'''
 		if (np.abs(max2 - pos1) < np.abs(max2 - pos2)):
+			print('ballo')
+			print(np.abs(x[max2] - x[pos1]))
 			# Check if it's within the yBufferRange
-			if (x[max2] - x[pos1] < yBufferRange):
+			if (np.abs(x[max2] - x[pos1]) < yBufferRange):
 				max2 = 'none'
 		elif (np.abs(max2 - pos1) > np.abs(max2 - pos2)):
-			if (x[max2] - x[pos2] < yBufferRange):
+			print('hollo')
+			print(np.abs(x[max2] - x[pos2]))
+			if (np.abs(x[max2] - x[pos2]) < yBufferRange):
 				max2 = 'none'
 	except ValueError:
+		print('hello')
 		max2 = 'none'
-		print('not this one')
 	
 	# Double check that we are returning different positions
 	if str(max1) == str(max2):
+		print('yolo')
 		max2 = 'none'
 	
 	return max1, max2
 
 
-locationID = 4425
-apogeeID = '2M01311387+6541494'
+locationID = 4288
+apogeeID = '2M03042804+3844174'
 print(locationID, apogeeID)
 badheader, header = apread.apStar(locationID, apogeeID, ext=0, dr='13', header=True)
 data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='13')
@@ -105,8 +110,8 @@ for visit in range(1, nvisits + 1):
 	else:
 		ccf = data['CCF'][0]
 	
-	max1, max2 = getMaxPositions(ccf, 0.35)
-	print(max2, pos1, pos2)
+	max1, max2 = getMaxPositions(ccf, 0.15)
+	print(max2)
 	print(calcR(ccf))
 	if str(max1) != 'none':
 		plt.scatter(max1, ccf[max1], color='red', s=30)

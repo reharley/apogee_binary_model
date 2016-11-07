@@ -41,7 +41,7 @@ def getRVs(locationID, apogeeID, visit):
 	:return: The velocities of the individual binary components in the system.
 	'''
 	# Contains the dir that holds martins data (deltaV's)
-	martin_data = '/Volumes/CoveyData/APOGEE_Spectra/Martin/Data/Highly_Likely/rv_tables/'
+	martin_data = '/Volumes/CoveyData-1/APOGEE_Spectra/Martin/Data/Highly_Likely/rv_tables/'
 	
 	# Get the Julian Dates, velocity of components A and B (km/s), and residual velocities (km/s)
 	# TODO: just get the line we want... no need to load the whole file. line = visit
