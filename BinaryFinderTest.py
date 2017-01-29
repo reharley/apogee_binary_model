@@ -140,46 +140,40 @@ def reportTargets(targets, ranger, filename):
 	f.close()
 
 def runFinder(ranger):
-	
-	targetCount = 1
 	interestingTargets = []
 	skippedTargets = []
-	for i in range(targetCount):
-		locationID = 4590
-		apogeeID = '2M00050265+0116236'
+	locationID = 4590
+	apogeeID = '2M00050265+0116236'
+	interestingTarget = False
+
+	badheader, header = apread.apStar(locationID, apogeeID, ext=0, dr='13', header=True)
+	skippedTargets.append([locationID, apogeeID])
+
+	nvisits = header['NVISITS']
+	'''sys.stdout.write("\r{0}\t\t\t".format('Target ' + str(i + 1) + '/' + str(targetCount)))
+	sys.stdout.flush()'''
+	positions = []
+	for visit in range(1, nvisits + 1):
+		data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='13')
+		if (nvisits != 1):
+			ccf = data['CCF'][0][1 + visit]
+		else:
+			ccf = data['CCF'][0]
+
+		pos = getMaxPositions(ccf, ranger)
+		r = calcR(ccf)
+		if (str(pos[0]) != 'none') and ((str(pos[1]) != 'none')):
+			interestingTarget = True
+			# r = calcR(ccf, pos[0], pos[1])
+		'''elif r < 1.0:
+			interestingTarget = True'''
+
+		positions.append([pos[0], pos[1], r])
+
+	# reportPositions(locationID, apogeeID, ranger, positions)
+	if interestingTarget == True:
+		interestingTargets.append([locationID, apogeeID])
 		interestingTarget = False
-
-		try:
-			badheader, header = apread.apStar(locationID, apogeeID, ext=0, dr='13', header=True)
-		except IOError:
-			skippedTargets.append([locationID, apogeeID])
-			continue
-
-		nvisits = header['NVISITS']
-		'''sys.stdout.write("\r{0}\t\t\t".format('Target ' + str(i + 1) + '/' + str(targetCount)))
-		sys.stdout.flush()'''
-		positions = []
-		for visit in range(1, nvisits + 1):
-			data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='13')
-			if (nvisits != 1):
-				ccf = data['CCF'][0][1 + visit]
-			else:
-				ccf = data['CCF'][0]
-
-			pos = getMaxPositions(ccf, ranger)
-			r = calcR(ccf)
-			if (str(pos[0]) != 'none') and (str(pos[1]) != 'none'):
-				interestingTarget = True
-				# r = calcR(ccf, pos[0], pos[1])
-			'''elif r < 1.0:
-				interestingTarget = True'''
-
-			positions.append([pos[0], pos[1], r])
-
-		# reportPositions(locationID, apogeeID, ranger, positions)
-		if interestingTarget == True:
-			interestingTargets.append([locationID, apogeeID])
-			interestingTarget = False
 
 	reportTargets(interestingTargets, ranger, 'interestingTargets')
 	reportTargets(skippedTargets, ranger, 'skippedTargets')

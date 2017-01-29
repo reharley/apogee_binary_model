@@ -137,7 +137,8 @@ targetCount = len(locationIDs)
 targets = np.array([(GridParam(locationIDs[i], apogeeIDs[i])) for i in range(targetCount)])
 
 
-'''procs = [Process(target=runTarget, args=(targets[0],)), Process(target=runTarget, args=(targets[1],)),
+'''
+procs = [Process(target=runTarget, args=(targets[0],)), Process(target=runTarget, args=(targets[1],)),
 		Process(target=runTarget, args=(targets[2],))]#, Process(target=runTarget, args=(targets[3],))]
 timers = [Timer(), Timer(), Timer()]#, Timer()]
 for i in range(3):

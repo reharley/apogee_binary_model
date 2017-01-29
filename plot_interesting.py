@@ -90,7 +90,7 @@ def getMaxPositions(x, yBufferRange):
 	
 	return max1, max2
 
-ranger = 0.13
+ranger = 0.02
 filename = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder/' + str(ranger) + '/interestingTargets.csv'
 locationIDs, apogeeIDs = np.loadtxt(filename, unpack=True, delimiter=',', dtype=str)
 targetCount = len(locationIDs)

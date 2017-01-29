@@ -96,9 +96,8 @@ def getMaxPositions(x, yBufferRange):
 	
 	return max1, max2
 
-
-locationID = 4288
-apogeeID = '2M03042804+3844174'
+locationID = 4602
+apogeeID = '2M06502133+2755152'
 print(locationID, apogeeID)
 badheader, header = apread.apStar(locationID, apogeeID, ext=0, dr='13', header=True)
 data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='13')
