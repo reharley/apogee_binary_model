@@ -8,12 +8,15 @@ print(hi.apogeeID)
 print(hi.locationID)
 print(hi.ranger)
 print(hi.filename)
+
 for visit in range(len(hi.max1)):
 	print('max1', visit + 1, hi.max1[visit])
+
 for visit in range(len(hi.max2)):
-	print('max1', visit + 1, hi.max2[visit])
+	print('max2', visit + 1, hi.max2[visit])
+	
 for visit in range(len(hi.r)):
-	print('max1', visit + 1, hi.r[visit])
+	print('r', visit + 1, hi.r[visit])
 '''for r in hi.r:
 	print(r)'''
 
