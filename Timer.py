@@ -12,3 +12,7 @@ class Timer:
 			self.startTime = 0.0
 			return temp
 		return 0.0
+
+	def current(self):
+		temp = time.time() - self.startTime
+		return "{0}:{1}:{2}".format(temp/3600,temp/60,temp%60)

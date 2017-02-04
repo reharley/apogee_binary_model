@@ -7,6 +7,7 @@ All plots will be sent to the immediate subdirectory './plots/'.
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from BFData import BFData
 
 def plotDeltaVCheck(locationID, apogeeID, visit, plots, params, title, range=[16650, 16800], folder='deltaV_check', dpi=None):
 	'''
@@ -195,3 +196,22 @@ def plotTeffGrid(locationID, apogeeID, visit, rangeTeff, grid, title, folder='te
 	plt.savefig(path + str(int(rangeTeff[0])) + '_' + str(int(rangeTeff[len(rangeTeff) - 1])) + '_' + str(visit) + '.png', format='png')
 	plt.clf()
 	plt.close('all')
+
+def plotCCFR(locationID, apogeeID, ranger, visit=1):
+	hi = BFData(locationID, apogeeID, ranger)
+	print(hi.apogeeID)
+	print(hi.locationID)
+	print(hi.ranger)
+	print(hi.filename)
+
+	for visit in range(len(hi.max1)):
+		print('max1', visit + 1, hi.max1[visit])
+
+	for visit in range(len(hi.max2)):
+		print('max2', visit + 1, hi.max2[visit])
+		
+	for visit in range(len(hi.r)):
+		print('r', visit + 1, hi.r[visit])
+	print("wub wub, dub dub", len(hi.r[visit]))
+	'''for r in hi.r:
+	print(r)'''

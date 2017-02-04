@@ -16,4 +16,4 @@ class BFData:
 		for visit in data:
 			self.max1.append(visit[2])
 			self.max2.append(visit[4])
-			self.r.append(visit[5:])
+			self.r.append(visit[5:].astype(float))

@@ -1,25 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from BFData import BFData
-
-hi = BFData('4424', '2M00000032+5737103', 0.02)
-print(hi.apogeeID)
-print(hi.locationID)
-print(hi.ranger)
-print(hi.filename)
-
-for visit in range(len(hi.max1)):
-	print('max1', visit + 1, hi.max1[visit])
-
-for visit in range(len(hi.max2)):
-	print('max2', visit + 1, hi.max2[visit])
-	
-for visit in range(len(hi.r)):
-	print('r', visit + 1, hi.r[visit])
-'''for r in hi.r:
-	print(r)'''
-
 
 folder = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder/'
 

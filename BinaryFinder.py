@@ -4,13 +4,16 @@ vsEnvironSetup.setVariables()
 
 from BinFinderTools import *
 import apogee.tools.read as apread
-
+from Timer import Timer
 
 data = apread.allStar(dr='13')
 apogeeIDs = data['APOGEE_ID']
 locationIDs = data['LOCATION_ID']
 targetCount = len(apogeeIDs)
 
+t = Timer()
+
+t.start()
 for i in range(targetCount):
 	locationID = locationIDs[i]
 	apogeeID = apogeeIDs[i]
@@ -49,9 +52,12 @@ for i in range(targetCount):
 					interestingTargets.append([locationID, apogeeID])
 
 			positions.append([max1, max2, r])
+			del r[:]
+			r = []
 		
 		reportPositions(locationID, apogeeID, ranger, positions)
 	recordTargets(interestingTargets, ranger, 'interestingTargets')
 	recordTargets(skippedTargets, ranger, 'skippedTargets')
 
-print("done")
+print("done", t.current())
+t.end()
