@@ -4,6 +4,4 @@ vsEnvironSetup.setVariables()
 
 from BinPlot import *
 
-
-
-plotCCFR('4424', '2M00000032+5737103', 0.02)
+plotCCFR('4472', '2M01525005-0353374', 0.02)

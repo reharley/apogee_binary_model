@@ -207,11 +207,23 @@ def plotCCFR(locationID, apogeeID, ranger, visit=1):
 	for visit in range(len(hi.max1)):
 		print('max1', visit + 1, hi.max1[visit])
 
+	maxDiff = [0, 1]
 	for visit in range(len(hi.max2)):
 		print('max2', visit + 1, hi.max2[visit])
-		
-	for visit in range(len(hi.r)):
+		if(hi.max2[visit] != "none"):
+			if(np.abs(int(hi.max2[visit]) - int(hi.max1[visit])) > maxDiff[0]):
+				maxDiff[0] = np.abs(int(hi.max2[visit]) - int(hi.max1[visit]))
+				maxDiff[1] = visit + 1
+
+	print(maxDiff[0], maxDiff[1])
+
+	'''for visit in range(len(hi.r)):
 		print('r', visit + 1, hi.r[visit])
-	print("wub wub, dub dub", len(hi.r[visit]))
+	rCount = len(hi.r[0])
+	dr = []
+	for i in range(rCount - 1):
+		dr.append(hi.r[i] - hi.r[i+1])
+
+	print("wub wub, dub dub", len(hi.r[visit]))'''
 	'''for r in hi.r:
 	print(r)'''

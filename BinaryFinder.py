@@ -17,12 +17,12 @@ t.start()
 for i in range(targetCount):
 	locationID = locationIDs[i]
 	apogeeID = apogeeIDs[i]
+	interestingTargets = []
+	skippedTargets = []
+	recorded = False
 	for k in range(2, 50):
 		ranger = k / 100.
-		interestingTargets = []
-		skippedTargets = []
 		r = []
-		recorded = False
 
 		try:
 			badheader, header = apread.apStar(locationID, apogeeID, ext=0, dr='13', header=True)
