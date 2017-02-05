@@ -81,7 +81,7 @@ def recordTargets(targets, ranger, filename):
 	f = open(filename, 'w')
 
 	for i in range(targetCount):
-		f.write(str(targets[i][0]) + ',' + str(targets[i][1]) + '\n')
+		f.write("{0},{1},{2}\n".format(targets[i][0], targets[i][1], targets[i][2]))
 	f.close()
 
 def reportPositions(locationID, apogeeID, ranger, positions):

@@ -14,22 +14,21 @@ targetCount = len(apogeeIDs)
 t = Timer()
 
 t.start()
+interestingTargets = []
+skippedTargets = []
 for i in range(targetCount):
 	locationID = locationIDs[i]
 	apogeeID = apogeeIDs[i]
-	interestingTargets = []
-	skippedTargets = []
 	recorded = False
 	for k in range(2, 50):
 		ranger = k / 100.
-		r = []
 
 		try:
 			badheader, header = apread.apStar(locationID, apogeeID, ext=0, dr='13', header=True)
 			data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='13')
 		except IOError:
 			skippedTargets.append([locationID, apogeeID])
-			continue
+			break
 		nvisits = header['NVISITS']
 
 		positions = []
@@ -40,24 +39,26 @@ for i in range(targetCount):
 				ccf = data['CCF'][0]
 			max1, max2 = getMaxPositions(ccf, ranger)
 
+			r = []
 			for cut in range(20):
 				r.append(calcR(ccf, cut*10, (401 - (cut * 10))))
 			
-			if str(max2) != 'none':
-				recorded = True
-				interestingTargets.append([locationID, apogeeID])
-
 			if r < 1.0:
 				if recorded is False:
-					interestingTargets.append([locationID, apogeeID])
+					recorded = True
+					interestingTargets.append([locationID, apogeeID, "r"])
+
+			if str(max2) != 'none':
+				if recorded is False:
+					recorded = True
+					interestingTargets.append([locationID, apogeeID, ranger])
 
 			positions.append([max1, max2, r])
-			del r[:]
-			r = []
 		
 		reportPositions(locationID, apogeeID, ranger, positions)
-	recordTargets(interestingTargets, ranger, 'interestingTargets')
-	recordTargets(skippedTargets, ranger, 'skippedTargets')
+
+recordTargets(interestingTargets, ranger, 'interestingTargets')
+recordTargets(skippedTargets, ranger, 'skippedTargets')
 
 print("done", t.current())
 t.end()
