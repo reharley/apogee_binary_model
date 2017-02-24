@@ -227,3 +227,30 @@ def plotCCFR(locationID, apogeeID, ranger, visit=1):
 	print("wub wub, dub dub", len(hi.r[visit]))'''
 	'''for r in hi.r:
 	print(r)'''
+
+def plotHistR():
+	filename = "/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder/interestingTargets.csv"
+	folder = "/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder_Plots/hist/"
+	locationIDs, apogeeIDs, rs = np.loadtxt(filename, delimiter=',', unpack=True, dtype=str,skiprows=1)
+	count = len(locationIDs)
+
+	# 20 r values
+	for j in range(20):
+		r = np.zeros(count)
+		for i in range(count):
+			locationID = locationIDs[i]
+			apogeeID = apogeeIDs[i]
+			ranger = rs[i]
+
+			try:
+				bf = BFData(locationID, apogeeID, ranger)
+			except:
+				continue
+				
+			r[i] = bf.lowestR(j)
+		plt.hist(r, bins=25)
+		plt.xlabel('r')
+		plt.ylabel('N')
+		plt.title('R' + str(j), loc='left')
+		plt.savefig(folder + 'r' + str(j) + '.png', format='png')
+		plt.close()

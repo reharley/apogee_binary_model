@@ -1,14 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import apogee.tools.read as apread
 import os
 
 folder = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder/'
+
+def getAllTargets():
+	data = apread.allStar(dr='13')
+	return data['APOGEE_ID'], data['LOCATION_ID']
 
 def calcR(x, pos1=0, pos2=401):
 	'''
 	Calculates the value of R with the given array x
 	:return:  The value of R
-	'''	
+	'''
 	ccfCenter = 201
 	pos1+= 1
 	tempMirror = (x[ccfCenter:pos2])[::-1]
@@ -72,12 +77,12 @@ def getMaxPositions(x, yBufferRange):
 	
 	return max1, max2
 
-def recordTargets(targets, ranger, filename):
+def recordTargets(targets, filename):
 	targetCount = len(targets)
 
-	if not os.path.exists(folder + str(round(ranger, 2)) + '/'):
-		os.makedirs(folder + str(round(ranger, 2)) + '/')
-	filename = folder + str(round(ranger, 2)) + '/' + filename + '.csv'
+	if not os.path.exists(folder):
+		os.makedirs(folder)
+	filename = folder + filename + '.csv'
 	f = open(filename, 'w')
 
 	for i in range(targetCount):
@@ -114,11 +119,11 @@ def reportPositions(locationID, apogeeID, ranger, positions):
 		position = positions[i]
 		# probably a more elegantly way. just doing some quick codin
 		# record postions of maximums
-		f.write('\t\t' + str(position[0]))
-		f.write('\t\t' + str(position[1]))
+		f.write(',' + str(position[0]))
+		f.write(',' + str(position[1]))
 		# record r values
 		for val in position[2]:
-			f.write('\t' + str(val))
+			f.write(',' + str(val))
 		f.write('\n')
 	f.close()
 
