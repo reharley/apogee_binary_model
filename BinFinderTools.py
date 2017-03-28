@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import apogee.tools.read as apread
 import os
 
-folder = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder/'
+folder = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder2/'
 
 def getAllTargets():
 	data = apread.allStar(dr='13')

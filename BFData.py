@@ -2,7 +2,7 @@ import numpy as np
 
 class BFData:
 	def __init__(self, locationID='', apogeeID='',ranger=''):
-		folder = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder/'
+		folder = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder2/'
 		
 		self.apogeeID = apogeeID
 		self.locationID = locationID

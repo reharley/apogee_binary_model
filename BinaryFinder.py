@@ -26,9 +26,8 @@ for i in range(targetCount):
 		data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='13')
 	except IOError:
 		skippedTargets.append([locationID, apogeeID])
-		break
+		continue
 	
-
 	#calculate r and test for second peak
 	for k in range(1, 50):
 		ranger = k / 100.
