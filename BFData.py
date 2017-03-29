@@ -14,11 +14,12 @@ class BFData:
 		self.rPeak = []
 		
 		data = np.loadtxt(self.filename, delimiter='\t', dtype=str,skiprows=1)
+		print(data)
 		for visit in data:
-			self.max1.append(visit[2])
-			self.max2.append(visit[4])
-			self.rPeak.append(visit[5])
-			self.r.append(visit[6:].astype(float))
+			self.max1.append(visit[1])
+			self.max2.append(visit[2])
+			self.rPeak.append(visit[3])
+			self.r.append(visit[4:].astype(float))
 	
 	def lowestR(self, slice):
 		count = len(self.r)

@@ -96,16 +96,17 @@ def getMaxPositions(x, yBufferRange):
 	
 	return max1, max2
 
-locationID = 4424
-apogeeID = '2M00013391+5904490'
+locationID = 4590
+apogeeID = '2M00092179+0038065'
 print(locationID, apogeeID)
 badheader, header = apread.apStar(locationID, apogeeID, ext=0, dr='13', header=True)
 data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='13')
 
 nvisits = header['NVISITS']
-for visit in range(1, nvisits + 1):
+for visit in range(0, nvisits):
 	if (nvisits != 1):
-		ccf = data['CCF'][0][1 + visit]
+		# first 2 are not ccfs for individual visits
+		ccf = data['CCF'][0][2 + visit]
 	else:
 		ccf = data['CCF'][0]
 	

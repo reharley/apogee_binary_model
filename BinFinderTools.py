@@ -57,21 +57,21 @@ def getMaxPositions(x, yBufferRange):
 		'''
 		# Check to see which inflection point is closest to peak 2
 		if (np.abs(x[max1] - x[max2]) < yBufferRange):
-			max2 = 'none'
+			max2 = np.nan
 		'''
 		if (np.abs(max2 - pos1) < np.abs(max2 - pos2)):
 			# Check if it's within the yBufferRange
 			if (np.abs(x[max2] - x[pos1]) < yBufferRange):
-				max2 = 'none'
+				max2 = np.nan
 		elif (np.abs(max2 - pos1) > np.abs(max2 - pos2)):
 			if (np.abs(x[max2] - x[pos2]) < yBufferRange):
-				max2 = 'none'
+				max2 = np.nan
 	except ValueError:
-		max2 = 'none'
+		max2 = np.nan
 	
 	# Double check that we are returning different positions
 	if str(max1) == str(max2):
-		max2 = 'none'
+		max2 = np.nan
 	
 	return max1, max2
 
@@ -84,7 +84,7 @@ def recordTargets(targets, filename):
 	f = open(filename, 'w')
 
 	for i in range(targetCount):
-		f.write("{0},{1},{2}\n".format(targets[i][0], targets[i][1], targets[i][2]))
+		f.write("{0},{1},{2},{3}\n".format(targets[i][0], targets[i][1], targets[i][2]))
 	f.close()
 
 def reportPositions(locationID, apogeeID, ranger, positions):
@@ -124,4 +124,3 @@ def reportPositions(locationID, apogeeID, ranger, positions):
 			f.write(',' + str(val))
 		f.write('\n')
 	f.close()
-

@@ -35,7 +35,7 @@ for i in range(targetCount):
 		positions = []
 		for visit in range(0, nvisits):
 			if (nvisits != 1):
-				ccf = data['CCF'][0][1 + visit]
+				ccf = data['CCF'][0][2 + visit]
 			else:
 				ccf = data['CCF'][0]
 			max1, max2 = getMaxPositions(ccf, ranger)
@@ -45,16 +45,19 @@ for i in range(targetCount):
 
 			# calculate r by reflecting about the highest peak
 			ccfCount = len(ccf)
-			if str(max2) != 'none':
+			if str(max2) != np.nan:
 				ccfCenter = max(max1, max2)
 			else:
 				ccfCenter = max1
-
-			if (ccfCount > ccfCenter*2):
-				r.append(calcR(ccf, pos2=ccfCenter*2-1, ccfCenter=ccfCenter))
-			else:
-				r.append(calcR(ccf, pos1=2*ccfCenter-ccfCount+1, pos2=ccfCount-1, ccfCenter=ccfCenter))
-
+			
+			try:
+				if (ccfCount > ccfCenter*2):
+					r.append(calcR(ccf, pos2=ccfCenter*2, ccfCenter=ccfCenter))
+				else:
+					r.append(calcR(ccf, pos1=2*ccfCenter-ccfCount+1, pos2=ccfCount-1, ccfCenter=ccfCenter))
+			except:
+				print(locationID, apogeeID)
+			
 			# calculate r by reflecting about the center (201)
 			for cut in range(20):
 				r.append(calcR(ccf, pos1=cut*10+1, pos2=(401 - (cut * 10)), ccfCenter=201))
@@ -64,10 +67,14 @@ for i in range(targetCount):
 					recorded = True
 					interestingTargets.append([locationID, apogeeID, "r"])
 
-			if str(max2) != 'none':
+			if np.isnan(max2) is False:
 				if recorded is False:
 					recorded = True
 					interestingTargets.append([locationID, apogeeID, ranger])
+			elif recorded is True:
+				#record when the binary is no longer detected
+				currentLen = len(interestingTargets)
+				interestingTargets[currentLen - 1].append(ranger)
 
 			positions.append([max1, max2, r])
 		
