@@ -13,8 +13,7 @@ class BFData:
 		self.r = []
 		self.rPeak = []
 		
-		data = np.loadtxt(self.filename, delimiter='\t', dtype=str,skiprows=1)
-		print(data)
+		data = np.loadtxt(self.filename, delimiter=',', dtype=str,skiprows=1)
 		for visit in data:
 			self.max1.append(visit[1])
 			self.max2.append(visit[2])
