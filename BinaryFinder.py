@@ -11,7 +11,6 @@ apogeeIDs, locationIDs = getAllTargets()
 targetCount = len(apogeeIDs)
 
 t = Timer()
-
 t.start()
 interestingTargets = []
 skippedTargets = []
@@ -34,7 +33,7 @@ for i in range(targetCount):
 		nvisits = header['NVISITS']
 
 		positions = []
-		for visit in range(1, nvisits):
+		for visit in range(0, nvisits):
 			if (nvisits != 1):
 				ccf = data['CCF'][0][1 + visit]
 			else:
@@ -43,9 +42,23 @@ for i in range(targetCount):
 
 			# Calculate r values
 			r = []
+
+			# calculate r by reflecting about the highest peak
+			ccfCount = len(ccf)
+			if str(max2) != 'none':
+				ccfCenter = max(max1, max2)
+			else:
+				ccfCenter = max1
+
+			if (ccfCount > ccfCenter*2):
+				r.append(calcR(ccf, pos2=ccfCenter*2-1, ccfCenter=ccfCenter))
+			else:
+				r.append(calcR(ccf, pos1=2*ccfCenter-ccfCount+1, pos2=ccfCount-1, ccfCenter=ccfCenter))
+
+			# calculate r by reflecting about the center (201)
 			for cut in range(20):
-				r.append(calcR(ccf, cut*10, (401 - (cut * 10))))
-			
+				r.append(calcR(ccf, pos1=cut*10+1, pos2=(401 - (cut * 10)), ccfCenter=201))
+
 			if r < 7.0:
 				if recorded is False:
 					recorded = True

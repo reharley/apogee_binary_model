@@ -9,13 +9,11 @@ def getAllTargets():
 	data = apread.allStar(dr='13')
 	return data['APOGEE_ID'], data['LOCATION_ID']
 
-def calcR(x, pos1=0, pos2=401):
+def calcR(x, pos1=0, pos2=401, ccfCenter=201):
 	'''
 	Calculates the value of R with the given array x
 	:return:  The value of R
 	'''
-	ccfCenter = 201
-	pos1+= 1
 	tempMirror = (x[ccfCenter:pos2])[::-1]
 	sigmaA = np.sqrt(1.0 / (2.0 * len(tempMirror)) * np.sum((x[pos1:ccfCenter] - tempMirror)**2))
 	return np.max(x) / (np.sqrt(2.0) * sigmaA)
@@ -109,7 +107,7 @@ def reportPositions(locationID, apogeeID, ranger, positions):
 	f = open(filename, 'w')
 
 	
-	f.write('visit\tmax1\tmax2\t')
+	f.write('visit\tmax1\tmax2\trpeak\t')
 	for i in range(len(positions[0][2])):
 		f.write('r'+str(i+1)+'\t\t\t')
 	f.write('\n')
