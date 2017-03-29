@@ -5,15 +5,16 @@ vsEnvironSetup.setVariables()
 from BinFinderTools import *
 import apogee.tools.read as apread
 from Timer import Timer
+from BFData import *
 
 
-locationID = 4477
-apogeeID = '2M01220226+1745349'
+locationID = 4287
+apogeeID = '2M00013948+7336427'
 ranger = 0.01
 print(locationID, apogeeID)
+BFData(locationID, apogeeID, ranger)
 badheader, header = apread.apStar(locationID, apogeeID, ext=0, dr='13', header=True)
 data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='13')
-
 nvisits = header['NVISITS']
 for visit in range(0, nvisits):
 	if (nvisits != 1):
