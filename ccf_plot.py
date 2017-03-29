@@ -14,22 +14,22 @@ def calcR(x, pos1=101, pos2=None):
 	'''
 	maxPos = np.argmax(x)
 	maxVal = x[maxPos]
-	ccfCenter = 201
+	peakLoc = 201
 
 	# Check if we are doing a general r calculation or we have 2 distinct peaks
 	if pos2 is None:
-		tempMirror = (x[ccfCenter:301])[::-1]
+		tempMirror = (x[peakLoc:301])[::-1]
 	else:
 		# Make sure that the bounds are symmetric
-		if (np.abs(pos2 - ccfCenter) <= np.abs(pos1 - ccfCenter)):
+		if (np.abs(pos2 - peakLoc) <= np.abs(pos1 - peakLoc)):
 			pos1-= 50
-			pos2 = ccfCenter + (np.abs(pos1 - ccfCenter))
+			pos2 = peakLoc + (np.abs(pos1 - peakLoc))
 		else:
 			pos2+= 50
-			pos1 = ccfCenter - (np.abs(pos2 - ccfCenter))
-		tempMirror = (x[ccfCenter:pos2])[::-1]
+			pos1 = peakLoc - (np.abs(pos2 - peakLoc))
+		tempMirror = (x[peakLoc:pos2])[::-1]
 
-	sigmaA = np.sqrt( 1.0 / (2.0 * len(tempMirror)) * np.sum((x[pos1:ccfCenter] - tempMirror)**2))
+	sigmaA = np.sqrt( 1.0 / (2.0 * len(tempMirror)) * np.sum((x[pos1:peakLoc] - tempMirror)**2))
 	return maxVal / ( np.sqrt(2.0) * sigmaA)
 
 
@@ -96,8 +96,8 @@ def getMaxPositions(x, yBufferRange):
 	
 	return max1, max2
 
-locationID = 4590
-apogeeID = '2M00092179+0038065'
+locationID = 4477
+apogeeID = '2M01220226+1745349'
 print(locationID, apogeeID)
 badheader, header = apread.apStar(locationID, apogeeID, ext=0, dr='13', header=True)
 data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='13')

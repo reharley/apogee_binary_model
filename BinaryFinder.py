@@ -46,21 +46,22 @@ for i in range(targetCount):
 			# calculate r by reflecting about the highest peak
 			ccfCount = len(ccf)
 			if str(max2) != np.nan:
-				ccfCenter = max(max1, max2)
+				peakLoc = max(max1, max2)
 			else:
-				ccfCenter = max1
-			
+				peakLoc = max1
+
 			try:
-				if (ccfCount > ccfCenter*2):
-					r.append(calcR(ccf, pos2=ccfCenter*2, ccfCenter=ccfCenter))
+				if (ccfCount > peakLoc*2):
+					r.append(calcR(ccf, pos2=peakLoc*2, peakLoc=peakLoc))
 				else:
-					r.append(calcR(ccf, pos1=2*ccfCenter-ccfCount+1, pos2=ccfCount-1, ccfCenter=ccfCenter))
+					r.append(calcR(ccf, pos1=2*peakLoc-ccfCount+1, pos2=ccfCount-1, peakLoc=peakLoc))
 			except:
+				r.append(np.nan)
 				print(locationID, apogeeID)
 			
 			# calculate r by reflecting about the center (201)
 			for cut in range(20):
-				r.append(calcR(ccf, pos1=cut*10+1, pos2=(401 - (cut * 10)), ccfCenter=201))
+				r.append(calcR(ccf, pos1=cut*10+1, pos2=(401 - (cut * 10)), peakLoc=201))
 
 			if r < 7.0:
 				if recorded is False:

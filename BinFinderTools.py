@@ -9,13 +9,16 @@ def getAllTargets():
 	data = apread.allStar(dr='13')
 	return data['APOGEE_ID'], data['LOCATION_ID']
 
-def calcR(x, pos1=0, pos2=401, ccfCenter=201):
+def calcR(x, pos1=0, pos2=401, peakLoc=201):
 	'''
 	Calculates the value of R with the given array x
 	:return:  The value of R
 	'''
-	tempMirror = (x[ccfCenter:pos2])[::-1]
-	sigmaA = np.sqrt(1.0 / (2.0 * len(tempMirror)) * np.sum((x[pos1:ccfCenter] - tempMirror)**2))
+	# if peakLoc is near the edges just skip it
+	if (peakLoc <= 10) or (peakLoc >= 390):
+		return np.nan
+	tempMirror = (x[peakLoc:pos2])[::-1]
+	sigmaA = np.sqrt(1.0 / (2.0 * len(tempMirror)) * np.sum((x[pos1:peakLoc] - tempMirror)**2))
 	return np.max(x) / (np.sqrt(2.0) * sigmaA)
 
 def findInflection(x):
