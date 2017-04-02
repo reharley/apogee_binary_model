@@ -19,4 +19,4 @@ class Timer:
 		temp%= 3600
 		mins = temp/60
 		sec = temp %60
-		return "{0}:{1}:{2}".format(hrs,mins,sec)
+		return "{0}h:{1}m:{2}s".format(int(hrs),int(mins),int(sec))

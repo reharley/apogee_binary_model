@@ -1,13 +1,14 @@
 import numpy as np
+import os
 
 class BFData:
 	def __init__(self, locationID='', apogeeID='',ranger=''):
-		folder = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder2/'
-		
+		folder = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder3/'
+
 		self.apogeeID = apogeeID
 		self.locationID = locationID
 		self.ranger = ranger
-		self.filename = folder + str(ranger) + '/' + str(locationID) + '/' + str(apogeeID) + '.tbl'
+		self.filename = folder + str(ranger) + '/' + str(locationID) + '/' + str(apogeeID) + '.csv'
 		self.max1 = []
 		self.max2 = []
 		self.r = []

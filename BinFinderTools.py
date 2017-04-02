@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import apogee.tools.read as apread
 import os
 
-folder = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder2/'
+folder = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder3/'
 
 def getAllTargets():
 	data = apread.allStar(dr='13')
@@ -40,16 +40,17 @@ def findInflection(x):
 			break
 	return pos2, pos1
 
-def getMaxPositions(x, yBufferRange):
+def getMaxPositions(x):
 	'''
 	Gets the positions of both maximums (if two exists) in the given array
 
 	:param x: The array to find both maximums
 	:param yBufferRange:  The minimum difference needed between the two maximums
-	:return:  The position of both maximums (max1, max2)
+	:return:  The position of both maximums and the peak height difference (max1, max2, peakhDiff)
 	'''
 	temp = np.array(x)
 	max1 = np.nanargmax(x)
+	peakhDiff = np.nan
 	pos1, pos2 = findInflection(temp)
 	temp[pos1:pos2] = np.nan
 	temp[np.where(temp < 0.2)] = np.nan
@@ -57,18 +58,19 @@ def getMaxPositions(x, yBufferRange):
 	# If we can find one, record the second maximum
 	try:
 		max2 = np.nanargmax(temp)
+		peakhDiff = abs(x[max1] - x[max2])
 		'''
 		# Check to see which inflection point is closest to peak 2
 		if (np.abs(x[max1] - x[max2]) < yBufferRange):
 			max2 = np.nan
 		'''
-		if (np.abs(max2 - pos1) < np.abs(max2 - pos2)):
+		'''if (np.abs(max2 - pos1) < np.abs(max2 - pos2)):
 			# Check if it's within the yBufferRange
 			if (np.abs(x[max2] - x[pos1]) < yBufferRange):
 				max2 = np.nan
 		elif (np.abs(max2 - pos1) > np.abs(max2 - pos2)):
 			if (np.abs(x[max2] - x[pos2]) < yBufferRange):
-				max2 = np.nan
+				max2 = np.nan'''
 	except ValueError:
 		max2 = np.nan
 	
@@ -76,7 +78,7 @@ def getMaxPositions(x, yBufferRange):
 	if str(max1) == str(max2):
 		max2 = np.nan
 	
-	return max1, max2
+	return max1, max2, peakhDiff
 
 def recordTargets(targets, filename):
 	targetCount = len(targets)
@@ -87,10 +89,10 @@ def recordTargets(targets, filename):
 	f = open(filename, 'w')
 
 	for i in range(targetCount):
-		f.write("{0},{1},{2},{3}\n".format(targets[i][0], targets[i][1], targets[i][2]))
+		f.write("{0},{1}\n".format(targets[i][0], targets[i][1]))
 	f.close()
 
-def reportPositions(locationID, apogeeID, ranger, positions):
+def reportPositions(locationID, apogeeID, positions):
 	'''
 	Records the positions of the maximums for each visit
 
@@ -104,15 +106,15 @@ def reportPositions(locationID, apogeeID, ranger, positions):
 	
 	visitCount = len(positions)
 
-	if not os.path.exists(folder + str(round(ranger, 2)) + '/' + str(locationID) + '/'):
-		os.makedirs(folder + str(round(ranger, 2)) + '/' + str(locationID) + '/')
-	filename = folder + str(round(ranger, 2)) + '/' + str(locationID) + '/' + str(apogeeID) + '.tbl'
+	if not os.path.exists(folder + str(locationID) + '/'):
+		os.makedirs(folder + str(locationID) + '/')
+	filename = folder + str(locationID) + '/' + str(apogeeID) + '.csv'
 	f = open(filename, 'w')
 
 	
-	f.write('visit\tmax1\tmax2\trpeak\t')
-	for i in range(len(positions[0][2])):
-		f.write('r'+str(i+1)+'\t\t\t')
+	f.write('visit,max1,max2,peakhDiff,rpeak,')
+	for i in range(len(positions[0][3])):
+		f.write('r'+str(i+1)+',')
 	f.write('\n')
 
 	for i in range(visitCount):
@@ -122,8 +124,9 @@ def reportPositions(locationID, apogeeID, ranger, positions):
 		# record postions of maximums
 		f.write(',' + str(position[0]))
 		f.write(',' + str(position[1]))
+		f.write(',' + str(position[2]))
 		# record r values
-		for val in position[2]:
+		for val in position[3]:
 			f.write(',' + str(val))
 		f.write('\n')
 	f.close()
