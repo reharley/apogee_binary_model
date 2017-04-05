@@ -16,6 +16,7 @@ lists/chi2/
 *.png
 *.nml
 *.tbl
+*.pyc
 .localized
 vsEnvironSetup.py
 vsEnvironSetup.pyc

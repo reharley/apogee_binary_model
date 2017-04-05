@@ -8,24 +8,27 @@ class BFData:
 		self.apogeeID = apogeeID
 		self.locationID = locationID
 		self.ranger = ranger
-		self.filename = folder + str(ranger) + '/' + str(locationID) + '/' + str(apogeeID) + '.csv'
+		self.filename = folder + str(locationID) + '/' + str(apogeeID) + '.csv'
 		self.max1 = []
 		self.max2 = []
 		self.r = []
+		self.peakhDiff = []
 		self.rPeak = []
 		
 		data = np.loadtxt(self.filename, delimiter=',', dtype=str,skiprows=1)
 		if len(data.shape) == 1:
 			self.max1.append(data[1])
 			self.max2.append(data[2])
-			self.rPeak.append(data[3])
-			self.r.append(data[4:].astype(float))
+			self.peakhDiff.append(data[3])
+			self.rPeak.append(data[4])
+			self.r.append(data[5:].astype(float))
 		else:
 			for visit in data:
 				self.max1.append(visit[1])
 				self.max2.append(visit[2])
-				self.rPeak.append(visit[3])
-				self.r.append(visit[4:].astype(float))
+				self.peakhDiff.append(visit[3])
+				self.rPeak.append(visit[4])
+				self.r.append(visit[5:].astype(float))
 	
 	def lowestR(self, slice):
 		count = len(self.r)
