@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 folder = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder4/'
 
 def getAllTargets():
+	'''
+	Returns all targets from the allStar file
+	:return: locationIDs, apogeeIDs
+	'''
 	data = apread.allStar(dr='13')
 	return data['APOGEE_ID'], data['LOCATION_ID']
 
@@ -46,7 +50,6 @@ def getMaxPositions(x):
 	Gets the positions of both maximums (if two exists) in the given array
 
 	:param x: The array to find both maximums
-	:param yBufferRange:  The minimum difference needed between the two maximums
 	:return:  The position of both maximums and the peak height difference (max1, max2, peakhDiff)
 	'''
 	temp = np.array(x)
@@ -84,6 +87,12 @@ def getMaxPositions(x):
 	return max1, max2, peakhDiff
 
 def recordTargetsCSV(targets, filename):
+	'''
+	Records the targets given into a csv file with the name filename
+
+	:param targets: The targets ex: [locationIDs, apogeeIDs]
+	:param filename: Name of the file
+	'''
 	targetCount = len(targets)
 
 	if not os.path.exists(folder):
@@ -97,11 +106,10 @@ def recordTargetsCSV(targets, filename):
 
 def recordBFData(locationID, apogeeID, positions):
 	'''
-	Records the positions of the maximums for each visit
+	Records all the data BinaryFinder finds
 
 	:param locationID: The field ID of the target
 	:param apogeeID: The apogee ID of the target
-	:param ranger: The range used for yBufferRange in getMaxPositions
 	:param positions: The positions of the (potentially two) maximums
 	'''
 	if positions == []:
@@ -136,6 +144,11 @@ def recordBFData(locationID, apogeeID, positions):
 	f.close()
 
 def recordTargets(locationIDs, apogeeIDs):
+	'''
+	With the given field and 2M IDs, record all the BFData
+	:param locationIDs: Field IDs
+	:param apogeeIDs: 2M IDs
+	'''
 	interestingTargetsr = []
 	interestingTargetsDualPeak = []
 	skippedTargets = []
@@ -208,6 +221,12 @@ def recordTargets(locationIDs, apogeeIDs):
 	recordTargetsCSV(skippedTargets, 'skippedTargets')
 
 def genPeakHCutTable(locationIDs, apogeeIDs, filename):
+	'''
+	Generate peakhTable
+	:param locationIDs: Field ID
+	:param apogeeIDs: 2M ID
+	:param filename: file
+	'''
 	targetCount = len(locationIDs)
 	data = []
 	for i in range(targetCount):
@@ -263,6 +282,13 @@ def genPeakHCutTable(locationIDs, apogeeIDs, filename):
 	plt.show()
 
 def removeSingle(locationIDs, apogeeIDs, filename):
+	'''
+	Removes all single targets from the lists provided
+	:param locationIDs: Field IDs
+	:param apogeeIDs: 2M IDs
+	:param filename: filename
+	:return: [locationIDs, apogeeIDs]
+	'''
 	targetCount = len(locationIDs)
 
 	data = []

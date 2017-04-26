@@ -19,6 +19,7 @@ print(targetCount, 'targets')
 locationIDs, apogeeIDs = bf.removeSingle(locationIDs, apogeeIDs, 'kevin_candidate_list')
 targetCount = len(locationIDs)
 print(targetCount, 'targets')
+
 plt.rcParams["figure.figsize"] = [20.0, 15.0]
 for i in range(targetCount):
 	locationID = locationIDs[i]
