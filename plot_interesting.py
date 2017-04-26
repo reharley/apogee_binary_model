@@ -4,27 +4,22 @@ vsEnvironSetup.setVariables()
 
 import numpy as np
 import matplotlib.pyplot as plt
-from BinFinderTools import *
+import BinFinderTools as bf
 import apogee.tools.read as apread
 from Timer import Timer
 from BFData import BFData
 
-filename = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder2/interestingTargets.csv'
-locationIDs, apogeeIDs, rangerd = np.loadtxt(filename, unpack=True, delimiter=',', dtype=str)
+#filename = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder4/interestingTargetsDualPeak.csv'
+#filename = 'lists/binaries2.dat'
+filename = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder4/kevin_candidate_list.csv'
+locationIDs, apogeeIDs = np.loadtxt(filename, unpack=True, delimiter=',', dtype=str)
 targetCount = len(locationIDs)
 print(targetCount, 'targets')
 
-# stores all the BFData objects for all the interesting targets
-intData = []
-for i in range(targetCount):
-	locationID = locationIDs[i]
-	apogeeID = apogeeIDs[i]
-	ranger = rangerd[i]
-	intData.append(BFData(locationID, apogeeID, ranger))
-
-print(intData[0].ranger)
-ranger = 0.02
-
+locationIDs, apogeeIDs = bf.removeSingle(locationIDs, apogeeIDs, 'kevin_candidate_list')
+targetCount = len(locationIDs)
+print(targetCount, 'targets')
+plt.rcParams["figure.figsize"] = [20.0, 15.0]
 for i in range(targetCount):
 	locationID = locationIDs[i]
 	apogeeID = apogeeIDs[i]
@@ -33,22 +28,20 @@ for i in range(targetCount):
 	data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='13')
 
 	nvisits = header['NVISITS']
-	for visit in range(1, nvisits):
+	for visit in range(0, nvisits):
 		if (nvisits != 1):
-			ccf = data['CCF'][0][1 + visit]
+			ccf = data['CCF'][0][2 + visit]
 		else:
 			ccf = data['CCF'][0]
-		max1, max2 = getMaxPositions(ccf, ranger)
-		if str(max2) != 'none':
-			print('visit: ', visit)
-			break
+		
+		plt.plot(ccf + visit,label= 'Visit: '+str(1+visit))
+		
+		#axes = plt.gca()
+		#axes.set_xlim([100,300])
+		
+		plt.xlabel('CCF Lag',fontsize=15)
+		plt.ylabel('$\widehat{CCF}$ Units', fontsize=15)
+		plt.title(' All Visits for {0} / {1}'.format(locationID, apogeeID),fontsize=16)
+		plt.legend(loc='lower left')
 	
-	print(max1, max2)
-
-	print(calcR(ccf))
-	if str(max1) != 'none':
-		plt.scatter(max1, ccf[max1], color='red', s=30)
-	if str(max2) != 'none':
-		plt.scatter(max2, ccf[max2], color='orange', s=70)
-	plt.plot(ccf, color='blue')
 	plt.show()

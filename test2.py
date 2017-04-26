@@ -2,36 +2,32 @@
 import vsEnvironSetup
 vsEnvironSetup.setVariables()
 
-from BinFinderTools import *
+
 import apogee.tools.read as apread
 from Timer import Timer
-from BFData import *
+from BFData import BFData
+import matplotlib.pyplot as plt
+import numpy as np
+import BinFinderTools as bf
 
-
-locationID = 4287
-apogeeID = '2M00013948+7336427'
+locationID = 4424
+apogeeID = '2M00071354+5804306'
 ranger = 0.01
 print(locationID, apogeeID)
-BFData(locationID, apogeeID, ranger)
 badheader, header = apread.apStar(locationID, apogeeID, ext=0, dr='13', header=True)
 data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='13')
+other = BFData(locationID, apogeeID)
+print(other.peakhDiff, other.max2, other.max1)
+print(np.array(other.max2)-np.array(other.max1), other.deltaR())
 nvisits = header['NVISITS']
+print(nvisits)
 for visit in range(0, nvisits):
 	if (nvisits != 1):
 		ccf = data['CCF'][0][2 + visit]
+		print(header['SNRVIS' + str(1	+visit)])
 	else:
 		ccf = data['CCF'][0]
-	max1, max2 = getMaxPositions(ccf, ranger)
-	
-	# calculate r by reflecting about the highest peak
-	ccfCount = len(ccf)
-	if str(max2) != np.nan:
-		peakLoc = max(max1, max2)
-	else:
-		peakLoc = max1
-	
-	print('visit', visit+1, peakLoc, max1, max2)
-	if (ccfCount > peakLoc*2):
-		print(calcR(ccf, pos2=peakLoc*2, peakLoc=peakLoc))
-	else:
-		print(calcR(ccf, pos1=2*peakLoc-ccfCount+1, pos2=ccfCount-1, peakLoc=peakLoc))
+		print(header['SNRVIS1'])
+	print(bf.getMaxPositions(ccf))
+	plt.plot(ccf + visit,label= 'Visit: '+str(1+visit))
+plt.show()

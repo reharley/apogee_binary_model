@@ -1,9 +1,10 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import apogee.tools.read as apread
 import os
+from BFData import BFData
+import matplotlib.pyplot as plt
 
-folder = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder3/'
+folder = '/Volumes/CoveyData-1/APOGEE_Spectra/APOGEE2_DR13/Bisector/BinaryFinder4/'
 
 def getAllTargets():
 	data = apread.allStar(dr='13')
@@ -73,9 +74,11 @@ def getMaxPositions(x):
 				max2 = np.nan'''
 	except ValueError:
 		max2 = np.nan
+		peakhDiff = np.nan
 	
 	# Double check that we are returning different positions
 	if str(max1) == str(max2):
+		peakhDiff = np.nan
 		max2 = np.nan
 	
 	return max1, max2, peakhDiff
@@ -92,7 +95,7 @@ def recordTargetsCSV(targets, filename):
 		f.write("{0},{1}\n".format(targets[i][0], targets[i][1]))
 	f.close()
 
-def reportPositions(locationID, apogeeID, positions):
+def recordBFData(locationID, apogeeID, positions):
 	'''
 	Records the positions of the maximums for each visit
 
@@ -112,8 +115,8 @@ def reportPositions(locationID, apogeeID, positions):
 	f = open(filename, 'w')
 
 	
-	f.write('visit,max1,max2,peakhDiff,rpeak,')
-	for i in range(len(positions[0][3])):
+	f.write('visit,snr,max1,max2,peakhDiff,rpeak')
+	for i in range(len(positions[0][4])):
 		f.write(',r'+str(i+1))
 	f.write('\n')
 
@@ -125,8 +128,9 @@ def reportPositions(locationID, apogeeID, positions):
 		f.write(',' + str(position[0]))
 		f.write(',' + str(position[1]))
 		f.write(',' + str(position[2]))
+		f.write(',' + str(position[3]))
 		# record r values
-		for val in position[3]:
+		for val in position[4]:
 			f.write(',' + str(val))
 		f.write('\n')
 	f.close()
@@ -143,8 +147,8 @@ def recordTargets(locationIDs, apogeeIDs):
 
 		# Get fits files
 		try:
-			badheader, header = apread.apStar(locationID, apogeeID, ext=0, dr='12', header=True)
-			data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='12')
+			badheader, header = apread.apStar(locationID, apogeeID, ext=0, dr='13', header=True)
+			data = apread.apStar(locationID, apogeeID, ext=9, header=False, dr='13')
 		except IOError:
 			skippedTargets.append([locationID, apogeeID])
 			continue
@@ -158,8 +162,10 @@ def recordTargets(locationIDs, apogeeIDs):
 		for visit in range(0, nvisits):
 			if (nvisits != 1):
 				ccf = data['CCF'][0][2 + visit]
+				snr = header['SNRVIS' + str(1+visit)]
 			else:
 				ccf = data['CCF'][0]
+				snr = header['SNRVIS1']
 			max1, max2, peakhDiff = getMaxPositions(ccf)
 			
 			# Calculate r values
@@ -193,10 +199,91 @@ def recordTargets(locationIDs, apogeeIDs):
 				dpRecorded = True
 				interestingTargetsDualPeak.append([locationID, apogeeID])
 
-			positions.append([max1, max2, peakhDiff, r])
+			positions.append([snr, max1, max2, peakhDiff, r])
 		
-		reportPositions(locationID, apogeeID, positions)
+		recordBFData(locationID, apogeeID, positions)
 
 	recordTargetsCSV(interestingTargetsr, 'interestingTargetsr')
 	recordTargetsCSV(interestingTargetsDualPeak, 'interestingTargetsDualPeak')
 	recordTargetsCSV(skippedTargets, 'skippedTargets')
+
+def genPeakHCutTable(locationIDs, apogeeIDs, filename):
+	targetCount = len(locationIDs)
+	data = []
+	for i in range(targetCount):
+		locationID = locationIDs[i]
+		apogeeID = apogeeIDs[i]
+
+		if (BFData.exists(locationID, apogeeID)):
+			data.append(BFData(locationID, apogeeID))
+	
+	thoseRs = []
+	for i in range(11, 15):
+		thoseRs.append(np.array([x.lowestR(i) for x in data]))
+	
+	thoseRPeaks = np.array([x.lowestRPeak() for x in data])
+	'''thosehDiffs = np.array([x.longestHDiff() for x in data])
+	print(thosehDiffs)
+	print(np.argwhere(thosehDiffs < 0.2))
+	indices = np.argwhere(thosehDiffs < 0.01)
+	recordTargetsCSV([locationIDs[indices], apogeeIDs[indices]], 'raptors')'''
+	filename = folder + filename + '.csv'
+	if not os.path.exists(folder):
+		os.makedirs(folder)
+	f = open(filename, 'w')
+	
+	f.write('R_Th')
+	for i in range(len(thoseRs)):
+		f.write(',R_Th>R{0},pop%'.format(i+11))
+	f.write(',R_Th>RP,pop%\n')
+
+	rCounts = [ [], [], [], [] ]
+	rPeakCounts = []
+	x = []
+	for i in range(80):
+		x.append(i*0.5)
+		f.write(str(i*0.5))
+		for j in range(len(thoseRs)):
+			rCount = len(np.where(i*0.5 > thoseRs[j])[0])
+			rCounts[j].append(rCount/float(targetCount))
+			f.write(',{0},{1}%'.format(rCount, round(rCount/float(targetCount)*100., 2)))
+		
+		rPeakCount = len(np.where(i*0.5 > thoseRPeaks)[0])
+		rPeakCounts.append(rPeakCount/float(targetCount))
+		f.write(',{0},{1}%\n'.format(rPeakCount, round(rPeakCount/float(targetCount)*100., 2)))
+	f.close()
+
+	plt.title('Number Of Targets Where R_Th > R_Target')
+	for i in range(len(rCounts)):
+		plt.plot(x, rCounts[i], label='r{0} pop%'.format(11+i))
+	plt.plot(x, rPeakCounts, label='rpeak pop%')
+	plt.xlabel('R')
+	plt.ylabel('Population %')
+	plt.legend()
+	plt.show()
+
+def removeSingle(locationIDs, apogeeIDs, filename):
+	targetCount = len(locationIDs)
+
+	data = []
+	for j in range(targetCount):
+		locationID = locationIDs[j]
+		apogeeID = apogeeIDs[j]
+
+		if (BFData.exists(locationID, apogeeID)):
+			data.append(BFData(locationID, apogeeID))
+	print('here')
+
+	max2s = np.array([x.max2 for x in data])
+
+	count = len(max2s)
+	singleTargets = []
+	indices = []
+	for i in range(count):
+		if (np.all(np.isnan(max2s[i]))):
+			singleTargets.append([locationIDs[i], apogeeIDs[i]])
+			indices.append(i)
+	
+	recordTargetsCSV(singleTargets, '{0}_single'.format(filename))
+	
+	return np.delete(locationIDs, indices), np.delete(apogeeIDs, indices)
